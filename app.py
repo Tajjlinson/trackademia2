@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, jsonify, session as flask_session, redirect, url_for, flash, send_file
 from flask_cors import CORS
 from datetime import datetime, timedelta
-from database import db, User, Admin, Lecturer, Student, Course, Session as SessionModel, Attendance, RemovalRequest
+from database import db, Notification, User, Admin, Lecturer, Student, Course, Session as SessionModel, Attendance, RemovalRequest
 import secrets
 import ipaddress
 import io
@@ -11,6 +11,7 @@ import time
 import os
 from urllib.parse import urlparse
 import psycopg2
+
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)
@@ -1613,11 +1614,10 @@ def check_upcoming_sessions():
                     print(f"NOTIFICATION: {student.user.name} - {session.course.name} starts in 15 minutes at {session.start_time}")
                     
                     # You could add this to a notifications table:
-                    notification = notification(
+                    notification = Notification(
                         user_id=student.user_id,
                         message=f"Upcoming: {session.course.name} ({session.name}) starts in 15 minutes",
                         type='reminder',
-                        created_at=datetime.utcnow()
                     )
                     db.session.add(notification)
             

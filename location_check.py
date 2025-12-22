@@ -1,46 +1,18 @@
-import math
-import ipaddress
+# location_check.py
+from math import radians, sin, cos, sqrt, atan2
 
-def calculate_distance(lat1, lon1, lat2, lon2):
-    """
-    Simple distance calculation in meters using Haversine formula
-    """
-    # Earth radius in meters
-    R = 6371000
-    
-    # Convert to radians
-    lat1 = math.radians(float(lat1))
-    lon1 = math.radians(float(lon1))
-    lat2 = math.radians(float(lat2))
-    lon2 = math.radians(float(lon2))
-    
-    # Differences
+def haversine_m(lat1, lon1, lat2, lon2):
+    R = 6371000.0  # meters
+    lat1, lon1, lat2, lon2 = map(radians, [float(lat1), float(lon1), float(lat2), float(lon2)])
     dlat = lat2 - lat1
     dlon = lon2 - lon1
-    
-    # Haversine formula
-    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-    
-    distance = R * c
-    
-    return distance
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1-a))
+    return R * c
 
-def check_attendance_location(student_lat, student_lon, session_lat, session_lon, max_distance, accuracy=None):
-    """
-    Check if student is within allowed distance from session
-    """
-    if session_lat is None or session_lon is None:
-        return False, 0
-    
-    distance = calculate_distance(
-        float(student_lat), float(student_lon),
-        float(session_lat), float(session_lon)
-    )
-    
-    # Account for GPS accuracy
-    effective_max_distance = float(max_distance)
-    if accuracy:
-        effective_max_distance += float(accuracy)
-    
-    return distance <= effective_max_distance, round(distance, 2)
+def check_attendance_location(student_lat, student_lon, session_lat, session_lon, allowed_distance_meters, accuracy=None):
+    distance = haversine_m(student_lat, student_lon, session_lat, session_lon)
+    # Optional: relax by GPS accuracy if provided
+    buffer_m = float(accuracy) if accuracy else 0.0
+    is_within = distance <= (float(allowed_distance_meters) + buffer_m)
+    return is_within, distance
