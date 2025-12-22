@@ -42,7 +42,7 @@ db.init_app(app)
 # Authentication middleware
 @app.before_request
 def require_login():
-    allowed_routes = ['login', 'static']
+    allowed_routes = ['login', 'static', 'health']
     if request.endpoint not in allowed_routes and 'user_id' not in flask_session:
         return redirect(url_for('login'))
 
