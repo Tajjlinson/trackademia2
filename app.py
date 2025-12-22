@@ -1637,6 +1637,10 @@ def start_notification_checker():
     thread = threading.Thread(target=notification_loop, daemon=True)
     thread.start()
 
+@app.get("/health")
+def health():
+    return "ok", 200
+
 
 def initialize_database():
     """Initialize the database tables and data"""
