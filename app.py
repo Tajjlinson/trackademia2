@@ -1637,7 +1637,7 @@ def start_notification_checker():
     thread = threading.Thread(target=notification_loop, daemon=True)
     thread.start()
 
-@app.get("/health")
+@app.route("/health")
 def health():
     return "ok", 200
 
