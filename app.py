@@ -4,10 +4,7 @@ from datetime import datetime, timedelta
 from database import db, User, Admin, Lecturer, Student, Course, Session as SessionModel, Attendance, RemovalRequest
 import secrets
 import ipaddress
-import csv
 import io
-from datetime import datetime, timedelta
-from io import BytesIO
 import csv
 import threading
 import time
@@ -1640,10 +1637,6 @@ def start_notification_checker():
     thread = threading.Thread(target=notification_loop, daemon=True)
     thread.start()
 
-# Call this after app initialization in main
-if __name__ == '__main__':
-    start_notification_checker()  # Add this line
-    # ... rest of your code
 
 def initialize_database():
     """Initialize the database tables and data"""
