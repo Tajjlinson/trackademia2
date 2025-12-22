@@ -2,7 +2,7 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "bash start.sh"
+startCommand = "gunicorn app:app --bind 0.0.0.0:$PORT"
 healthCheckPath = "/login"
 healthCheckTimeout = 300
 
