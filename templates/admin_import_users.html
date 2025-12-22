@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Admin - Import Users{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <!-- Page Header -->
+  <div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h1 class="h3 mb-1">
+        <i class="fas fa-file-import me-2"></i>Import Users (CSV)
+      </h1>
+      <p class="text-muted mb-0">
+        Upload a CSV to create Admin, Lecturer, and Student accounts in bulk.
+      </p>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('admin_users') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Back to Users
+      </a>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Left: Upload -->
+    <div class="col-lg-7">
+      <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+          <h6 class="m-0 fw-bold text-primary">
+            <i class="fas fa-upload me-2"></i>Upload CSV File
+          </h6>
+          <span class="badge bg-info">
+            <i class="fas fa-info-circle me-1"></i>CSV only
+          </span>
+        </div>
+
+        <div class="card-body">
+          <div class="alert alert-warning d-flex align-items-start" role="alert">
+            <i class="fas fa-triangle-exclamation mt-1 me-2"></i>
+            <div>
+              <div class="fw-bold">Before you import</div>
+              <ul class="mb-0">
+                <li>Headers must match exactly (case-sensitive).</li>
+                <li><strong>user_type</strong> must be one of: <code>admin</code>, <code>lecturer</code>, <code>student</code>.</li>
+                <li>Duplicates (username/email) may be skipped by the importer.</li>
+              </ul>
+            </div>
+          </div>
+
+          <form method="POST" enctype="multipart/form-data" class="mt-3">
+            <div class="mb-3">
+              <label for="csv_file" class="form-label fw-bold">Select CSV file</label>
+              <input class="form-control" type="file" id="csv_file" name="csv_file" accept=".csv" required>
+              <div class="form-text">
+                Tip: Save your spreadsheet as <strong>CSV (Comma delimited)</strong>.
+              </div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-cloud-upload-alt me-1"></i>Import Users
+              </button>
+
+              <a href="{{ url_for('admin_users') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-times me-1"></i>Cancel
+              </a>
+            </div>
+          </form>
+        </div>
+
+        <div class="card-footer bg-light">
+          <small class="text-muted">
+            <i class="fas fa-lock me-1"></i>Only admins can import users.
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: CSV Format -->
+    <div class="col-lg-5">
+      <div class="card shadow mb-4">
+        <div class="card-header py-3">
+          <h6 class="m-0 fw-bold text-primary">
+            <i class="fas fa-table me-2"></i>CSV Format Guide
+          </h6>
+        </div>
+
+        <div class="card-body">
+          <p class="text-muted mb-2">
+            Minimum required columns:
+          </p>
+
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th>Column</th>
+                  <th>Required?</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>username</code></td>
+                  <td><span class="badge bg-danger">Yes</span></td>
+                  <td>Must be unique</td>
+                </tr>
+                <tr>
+                  <td><code>name</code></td>
+                  <td><span class="badge bg-danger">Yes</span></td>
+                  <td>Full name</td>
+                </tr>
+                <tr>
+                  <td><code>password</code></td>
+                  <td><span class="badge bg-danger">Yes</span></td>
+                  <td>Initial password</td>
+                </tr>
+                <tr>
+                  <td><code>user_type</code></td>
+                  <td><span class="badge bg-danger">Yes</span></td>
+                  <td><code>admin</code>, <code>lecturer</code>, or <code>student</code></td>
+                </tr>
+                <tr>
+                  <td><code>email</code></td>
+                  <td><span class="badge bg-secondary">Optional</span></td>
+                  <td>Recommended (unique)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <hr>
+
+          <p class="text-muted mb-2">
+            Role-specific optional columns:
+          </p>
+
+          <ul class="mb-3">
+            <li><strong>Student:</strong> <code>student_id</code>, <code>major</code>, <code>enrollment_year</code></li>
+            <li><strong>Lecturer:</strong> <code>employee_id</code>, <code>department</code>, <code>office_location</code>, <code>office_hours</code></li>
+            <li><strong>Admin:</strong> <code>role</code> (optional)</li>
+          </ul>
+
+          <div class="bg-light border rounded p-3">
+            <div class="fw-bold mb-2"><i class="fas fa-clipboard-list me-1"></i>Example CSV rows</div>
+            <pre class="mb-0 small" style="white-space: pre-wrap;">
+username,name,email,password,user_type,student_id,major,enrollment_year
+jdoe,Jane Doe,jdoe@uwi.edu,password123,student,620123456,Computer Science,2024
+dsmith,Dr Smith,dsmith@uwi.edu,password123,lecturer,L102,Computing,,
+admin2,Second Admin,admin2@uwi.edu,password123,admin,,,,</pre>
+          </div>
+        </div>
+
+        <div class="card-footer bg-light">
+          <small class="text-muted">
+            If you want, I can add a “Download CSV Template” button.
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Small UX: show chosen filename next to the input label (optional)
+  document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('csv_file');
+    if (!input) return;
+
+    input.addEventListener('change', () => {
+      if (input.files && input.files.length > 0) {
+        console.log('CSV selected:', input.files[0].name);
+      }
+    });
+  });
+</script>
+{% endblock %}

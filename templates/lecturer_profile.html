@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+{% block title %}Lecturer Profile{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <!-- Page Header -->
+  <div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0">
+      <i class="fas fa-chalkboard-teacher me-2"></i>Lecturer Profile
+    </h1>
+  </div>
+
+  <div class="row">
+    <!-- Left Column: Profile Info -->
+    <div class="col-lg-8">
+      <!-- Profile Card -->
+      <div class="card shadow mb-4">
+        <div class="card-header py-3">
+          <h6 class="m-0 fw-bold text-primary">
+            <i class="fas fa-user-circle me-2"></i>Profile Information
+          </h6>
+        </div>
+
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3 text-center">
+              <div class="profile-image mb-3">
+                <i class="fas fa-chalkboard-teacher fa-5x text-primary"></i>
+              </div>
+              <h5 class="fw-bold">{{ user.name }}</h5>
+              <span class="badge bg-info">Lecturer</span>
+            </div>
+
+            <div class="col-md-9">
+              <div class="table-responsive">
+                <table class="table table-borderless mb-0">
+                  <tr>
+                    <th style="width:30%">Full Name:</th>
+                    <td>{{ user.name }}</td>
+                  </tr>
+                  <tr>
+                    <th>Username:</th>
+                    <td>{{ user.username }}</td>
+                  </tr>
+                  <tr>
+                    <th>Email:</th>
+                    <td>{{ user.email or 'Not set' }}</td>
+                  </tr>
+                  <tr>
+                    <th>Employee ID:</th>
+                    <td>{{ lecturer.employee_id if lecturer else 'N/A' }}</td>
+                  </tr>
+                  <tr>
+                    <th>Department:</th>
+                    <td>{{ lecturer.department if lecturer else 'N/A' }}</td>
+                  </tr>
+                  <tr>
+                    <th>Office Location:</th>
+                    <td>{{ lecturer.office_location if lecturer else 'N/A' }}</td>
+                  </tr>
+                  <tr>
+                    <th>Office Hours:</th>
+                    <td>{{ lecturer.office_hours if lecturer else 'N/A' }}</td>
+                  </tr>
+                  <tr>
+                    <th>Account Status:</th>
+                    <td>
+                      {% if user.is_active %}
+                        <span class="badge bg-success">
+                          <i class="fas fa-check-circle me-1"></i>Active
+                        </span>
+                      {% else %}
+                        <span class="badge bg-danger">
+                          <i class="fas fa-times-circle me-1"></i>Inactive
+                        </span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>Member Since:</th>
+                    <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card-footer bg-light">
+          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+            <i class="fas fa-edit me-1"></i>Edit Profile
+          </button>
+        </div>
+      </div>
+
+      <!-- Courses Card -->
+      <div class="card shadow">
+        <div class="card-header py-3">
+          <h6 class="m-0 fw-bold text-primary">
+            <i class="fas fa-book me-2"></i>Courses Teaching
+          </h6>
+        </div>
+
+        <div class="card-body">
+          {% if courses %}
+            <div class="table-responsive">
+              <table class="table align-middle">
+                <thead>
+                  <tr>
+                    <th>Course Code</th>
+                    <th>Course Name</th>
+                    <th>Semester</th>
+                    <th>Students</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for course in courses %}
+                  <tr>
+                    <td>{{ course.code }}</td>
+                    <td>{{ course.name }}</td>
+                    <td>{{ course.semester }}</td>
+                    <td>{{ course.students|length }} / {{ course.max_capacity }}</td>
+                    <td>
+                      {% if course.is_active %}
+                        <span class="badge bg-success">Active</span>
+                      {% else %}
+                        <span class="badge bg-secondary">Inactive</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-center py-4">
+              <i class="fas fa-book fa-3x text-muted mb-3"></i>
+              <h5 class="text-muted">No courses assigned</h5>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Stats -->
+    <div class="col-lg-4">
+      <div class="card shadow mb-4">
+        <div class="card-header py-3">
+          <h6 class="m-0 fw-bold text-primary">
+            <i class="fas fa-chart-bar me-2"></i>Teaching Statistics
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="text-center">
+            <div class="row">
+              <div class="col-6">
+                <div class="border-end">
+                  <div class="text-primary fw-bold h4">{{ courses|length }}</div>
+                  <div class="text-muted">Courses</div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="text-primary fw-bold h4">
+                  {% set total_students = [] %}
+                  {% for course in courses %}
+                    {% set _ = total_students.append(course.students|length) %}
+                  {% endfor %}
+                  {{ total_students|sum }}
+                </div>
+                <div class="text-muted">Total Students</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow">
+        <div class="card-header py-3">
+          <h6 class="m-0 fw-bold text-primary">
+            <i class="fas fa-info-circle me-2"></i>Account Information
+          </h6>
+        </div>
+        <div class="card-body">
+          <p class="mb-3"><strong>User ID:</strong><br>
+            <span class="text-muted">{{ user.id }}</span>
+          </p>
+
+          <p class="mb-3"><strong>Account Type:</strong><br>
+            <span class="badge bg-info">{{ user.user_type|capitalize }}</span>
+          </p>
+
+          <p class="mb-3"><strong>Account Created:</strong><br>
+            {{ user.created_at.strftime('%B %d, %Y') }}
+          </p>
+
+          <p class="mb-0"><strong>Profile Last Updated:</strong><br>
+            {{ user.created_at.strftime('%B %d, %Y') }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Edit Profile</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="profileForm" onsubmit="return false;">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="name" class="form-label">Full Name *</label>
+                <input type="text" class="form-control" id="name" value="{{ user.name }}" required>
+              </div>
+
+              <div class="mb-3">
+                <label for="email" class="form-label">Email Address</label>
+                <input type="email" class="form-control" id="email" value="{{ user.email or '' }}">
+              </div>
+
+              <div class="mb-3">
+                <label for="department" class="form-label">Department</label>
+                <input type="text" class="form-control" id="department" value="{{ lecturer.department if lecturer else '' }}">
+              </div>
+
+              <div class="mb-3">
+                <label for="employee_id" class="form-label">Employee ID</label>
+                <input type="text" class="form-control" id="employee_id" value="{{ lecturer.employee_id if lecturer else '' }}">
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="office_location" class="form-label">Office Location</label>
+                <input type="text" class="form-control" id="office_location" value="{{ lecturer.office_location if lecturer else '' }}">
+              </div>
+
+              <div class="mb-3">
+                <label for="office_hours" class="form-label">Office Hours</label>
+                <input type="text" class="form-control" id="office_hours" value="{{ lecturer.office_hours if lecturer else '' }}">
+              </div>
+
+              <hr>
+              <h6 class="mb-3">Change Password</h6>
+
+              <div class="mb-3">
+                <label for="current_password" class="form-label">Current Password</label>
+                <input type="password" class="form-control" id="current_password">
+              </div>
+
+              <div class="mb-3">
+                <label for="new_password" class="form-label">New Password</label>
+                <input type="password" class="form-control" id="new_password">
+              </div>
+
+              <div class="mb-3">
+                <label for="confirm_password" class="form-label">Confirm New Password</label>
+                <input type="password" class="form-control" id="confirm_password">
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="saveProfileBtn" onclick="saveProfile()">
+          Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .profile-image{
+    padding:20px;
+    border-radius:50%;
+    background-color:#f8f9fc;
+    display:inline-block;
+  }
+  .table-borderless th{
+    font-weight:600;
+    color:#495057;
+  }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function saveProfile() {
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const department = document.getElementById('department').value.trim();
+  const employee_id = document.getElementById('employee_id').value.trim();
+  const office_location = document.getElementById('office_location').value.trim();
+  const office_hours = document.getElementById('office_hours').value.trim();
+  const current_password = document.getElementById('current_password').value;
+  const new_password = document.getElementById('new_password').value;
+  const confirm_password = document.getElementById('confirm_password').value;
+
+  if (!name) {
+    alert('Name is required');
+    return;
+  }
+
+  if (new_password) {
+    if (!current_password) {
+      alert('Please enter your current password');
+      return;
+    }
+    if (new_password !== confirm_password) {
+      alert('New passwords do not match');
+      return;
+    }
+    if (new_password.length < 6) {
+      alert('Password must be at least 6 characters');
+      return;
+    }
+  }
+
+  const data = {
+    name,
+    email,
+    department,
+    employee_id,
+    office_location,
+    office_hours,
+    current_password,
+    new_password
+  };
+
+  const saveButton = document.getElementById('saveProfileBtn');
+  const originalText = saveButton.innerHTML;
+  saveButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+  saveButton.disabled = true;
+
+  fetch('/profile/update', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  .then(async (response) => {
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      const text = await response.text();
+      throw new Error('Expected JSON but got: ' + text.slice(0, 200));
+    }
+    return response.json();
+  })
+  .then((responseData) => {
+    saveButton.innerHTML = originalText;
+    saveButton.disabled = false;
+
+    if (responseData.success) {
+      alert(responseData.message || 'Profile updated successfully');
+
+      const modalEl = document.getElementById('editProfileModal');
+      const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+      modal.hide();
+
+      setTimeout(() => location.reload(), 300);
+    } else {
+      alert('Error: ' + (responseData.message || 'Update failed'));
+    }
+  })
+  .catch((error) => {
+    console.error(error);
+    saveButton.innerHTML = originalText;
+    saveButton.disabled = false;
+    alert('An error occurred while updating profile');
+  });
+}
+</script>
+{% endblock %}

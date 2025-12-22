@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}My Removal Requests{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1><i class="fas fa-user-minus"></i> My Removal Requests</h1>
+    <p>Track the status of your student removal requests</p>
+</div>
+
+<div class="management-container">
+    {% if removal_requests %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Course</th>
+                    <th>Student</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Admin Notes</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for request in removal_requests %}
+                <tr class="status-{{ request.status }}">
+                    <td>{{ request.created_at.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ request.course.code }}</td>
+                    <td>{{ request.student.user.name }}</td>
+                    <td>
+                        <div class="reason-text">
+                            {{ request.request_reason|truncate(50) }}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge status-{{ request.status }}">
+                            {% if request.status == 'pending' %}
+                            <i class="fas fa-clock"></i> Pending
+                            {% elif request.status == 'approved' %}
+                            <i class="fas fa-check-circle"></i> Approved
+                            {% elif request.status == 'rejected' %}
+                            <i class="fas fa-times-circle"></i> Rejected
+                            {% elif request.status == 'cancelled' %}
+                            <i class="fas fa-ban"></i> Cancelled
+                            {% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        {% if request.admin_notes %}
+                        {{ request.admin_notes|truncate(50) }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if request.status == 'pending' %}
+                        <button onclick="cancelRequest('{{ request.id }}')" 
+                                class="btn btn-warning btn-sm">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="no-data-card">
+        <i class="fas fa-inbox" style="font-size: 48px; color: #9ca3af; margin-bottom: 20px;"></i>
+        <h3>No Removal Requests</h3>
+        <p>You haven't submitted any removal requests yet.</p>
+        <a href="{{ url_for('lecturer_dashboard') }}" class="btn btn-primary">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function cancelRequest(requestId) {
+    if (confirm('Are you sure you want to cancel this removal request?')) {
+        fetch(`/api/removal-request/cancel/${requestId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Request cancelled successfully.');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+    }
+}
+</script>
+
+<style>
+.no-data-card {
+    text-align: center;
+    padding: 60px 40px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.no-data-card h3 {
+    margin: 20px 0 10px 0;
+    color: #374151;
+}
+
+.no-data-card p {
+    color: #6b7280;
+    margin-bottom: 30px;
+}
+</style>
+{% endblock %}

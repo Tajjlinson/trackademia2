@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}User Management{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>User Management</h1>
+    <div class="header-actions">
+        <a href="{{ url_for('admin_create_user') }}" class="btn btn-success">
+            <i class="fas fa-user-plus"></i> Add User
+        </a>
+        <a href="{{ url_for('admin_import_users') }}" class="btn btn-info">
+            <i class="fas fa-file-import"></i> Import CSV
+        </a>
+    </div>
+</div>
+
+<div class="table-container">
+    <div class="table-actions">
+        <div class="search-box">
+            <input type="text" id="userSearch" placeholder="Search users...">
+            <i class="fas fa-search"></i>
+        </div>
+        <div class="filter-box">
+            <select id="userFilter">
+                <option value="">All Users</option>
+                <option value="admin">Admins</option>
+                <option value="lecturer">Lecturers</option>
+                <option value="student">Students</option>
+            </select>
+        </div>
+    </div>
+    
+    <table id="usersTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr data-type="{{ user.user_type }}">
+                <td>{{ user.name }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.email or 'N/A' }}</td>
+                <td>
+                    {% if user.user_type == 'admin' %}
+                        <span class="badge bg-danger">
+                        <i class="fas fa-user-shield me-1"></i> Admin
+                        </span>
+                        {% if user.admin and user.admin.role %}
+                        <div class="small text-muted">{{ user.admin.role }}</div>
+                        {% endif %}
+
+                    {% elif user.user_type == 'lecturer' %}
+                        <span class="badge bg-primary">
+                        <i class="fas fa-chalkboard-teacher me-1"></i> Lecturer
+                        </span>
+
+                    {% elif user.user_type == 'student' %}
+                        <span class="badge bg-success">
+                        <i class="fas fa-user-graduate me-1"></i> Student
+                        </span>
+
+                    {% else %}
+                        <span class="badge bg-secondary">Unknown</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.is_active %}
+                    <span class="status-badge status-active">
+                        <i class="fas fa-check-circle"></i> Active
+                    </span>
+                    {% else %}
+                    <span class="status-badge status-inactive">
+                        <i class="fas fa-times-circle"></i> Inactive
+                    </span>
+                    {% endif %}
+                </td>
+                <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    <div class="action-buttons">
+                        <a href="{{ url_for('admin_edit_user', user_id=user.id) }}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <button class="btn btn-danger btn-sm delete-user" data-user-id="{{ user.id }}" data-user-name="{{ user.name }}">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <h3>Confirm Delete</h3>
+        <p>Are you sure you want to delete user <span id="deleteUserName"></span>?</p>
+        <p class="text-danger">This action cannot be undone!</p>
+        <div class="modal-actions">
+            <form id="deleteForm" method="POST" style="display: inline;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn btn-danger">Delete</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Search and filter functionality
+document.getElementById('userSearch').addEventListener('keyup', function() {
+    const searchTerm = this.value.toLowerCase();
+    const filterType = document.getElementById('userFilter').value;
+    const rows = document.querySelectorAll('#usersTable tbody tr');
+    
+    rows.forEach(row => {
+        const name = row.cells[0].textContent.toLowerCase();
+        const username = row.cells[1].textContent.toLowerCase();
+        const email = row.cells[2].textContent.toLowerCase();
+        const type = row.dataset.type;
+        
+        const matchesSearch = name.includes(searchTerm) || 
+                            username.includes(searchTerm) || 
+                            email.includes(searchTerm);
+        const matchesFilter = !filterType || type === filterType;
+        
+        row.style.display = matchesSearch && matchesFilter ? '' : 'none';
+    });
+});
+
+document.getElementById('userFilter').addEventListener('change', function() {
+    document.getElementById('userSearch').dispatchEvent(new Event('keyup'));
+});
+
+// Delete user functionality
+document.querySelectorAll('.delete-user').forEach(button => {
+    button.addEventListener('click', function() {
+        const userId = this.dataset.userId;
+        const userName = this.dataset.userName;
+        
+        document.getElementById('deleteUserName').textContent = userName;
+        document.getElementById('deleteForm').action = "{{ url_for('admin_delete_user', user_id=0) }}".replace('0', userId);
+        
+        document.getElementById('deleteModal').style.display = 'block';
+    });
+});
+
+function closeModal() {
+    document.getElementById('deleteModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('deleteModal');
+    if (event.target == modal) {
+        closeModal();
+    }
+}
+</script>
+{% endblock %}

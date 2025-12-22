@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+{% block title %}Admin - Removal Requests{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-user-minus me-2"></i>Student Removal Requests
+        </h1>
+    </div>
+
+    <!-- Pending Requests Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 fw-bold text-primary">
+                <i class="fas fa-clock me-2"></i>Pending Requests ({{ pending_requests|length }})
+            </h6>
+        </div>
+        <div class="card-body">
+            {% if pending_requests %}
+            <div class="table-responsive">
+                <table class="table table-bordered" id="pendingRequestsTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Course</th>
+                            <th>Student</th>
+                            <th>Lecturer</th>
+                            <th>Reason</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in pending_requests %}
+                        <tr data-request-id="{{ request.id }}"
+                            data-full-reason="{{ request.reason|e }}">
+                            <td>{{ request.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <strong>{{ request.course.code }}</strong><br>
+                                <small class="text-muted">{{ request.course.name }}</small>
+                            </td>
+                            <td>
+                                {{ request.student.user.name }}<br>
+                                <small class="text-muted">{{ request.student.student_id }}</small>
+                            </td>
+                            <td>{{ request.lecturer.user.name }}</td>
+                            <td>
+                                <div class="reason-text" style="max-width: 200px;">
+                                    {{ request.reason[:100] }}
+                                    {% if request.reason|length > 100 %}
+                                    ... <a href="#" class="text-primary"
+                                          onclick="showFullReason('{{ request.id }}'); return false;">Read more</a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="btn-group-vertical">
+                                    <button type="button"
+                                            onclick="approveRequest('{{ request.id }}')"
+                                            class="btn btn-success btn-sm mb-1">
+                                        <i class="fas fa-check"></i> Approve
+                                    </button>
+                                    <button type="button"
+                                            onclick="rejectRequest('{{ request.id }}')"
+                                            class="btn btn-danger btn-sm mb-1">
+                                        <i class="fas fa-times"></i> Reject
+                                    </button>
+                                    <button type="button"
+                                            onclick="showRequestDetails('{{ request.id }}')"
+                                            class="btn btn-info btn-sm">
+                                        <i class="fas fa-eye"></i> Details
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                <h5 class="text-muted">No pending removal requests</h5>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recently Processed Card -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 fw-bold text-primary">
+                <i class="fas fa-history me-2"></i>Recently Processed
+            </h6>
+        </div>
+        <div class="card-body">
+            {% if recent_requests %}
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Course</th>
+                            <th>Student</th>
+                            <th>Status</th>
+                            <th>Reviewed By</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in recent_requests %}
+                        <tr class="{% if request.status == 'approved' %}table-success{% else %}table-danger{% endif %}">
+                            <td>{{ request.reviewed_at.strftime('%Y-%m-%d') if request.reviewed_at else 'N/A' }}</td>
+                            <td>{{ request.course.code }}</td>
+                            <td>{{ request.student.user.name }}</td>
+                            <td>
+                                <span class="badge {% if request.status == 'approved' %}bg-success{% else %}bg-danger{% endif %}">
+                                    {% if request.status == 'approved' %}
+                                    <i class="fas fa-check-circle me-1"></i> Approved
+                                    {% else %}
+                                    <i class="fas fa-times-circle me-1"></i> Rejected
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>{{ request.admin_reviewer.user.name if request.admin_reviewer else 'N/A' }}</td>
+                            <td>
+                                {% if request.review_notes %}
+                                {{ request.review_notes[:50] }}{% if request.review_notes|length > 50 %}...{% endif %}
+                                {% else %}
+                                <span class="text-muted">No notes</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No processed requests yet</h5>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Details Modal (Bootstrap 5 only) -->
+<div class="modal fade" id="requestDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-file-alt me-2"></i>Removal Request Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="requestDetailsContent">
+                <!-- Dynamic content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Full Reason Modal (Bootstrap 5 only) -->
+<div class="modal fade" id="fullReasonModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-file-alt me-2"></i>Full Reason</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="fullReasonContent"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function log(message, data = null) {
+    console.log(`[Removal Requests] ${message}`, data || '');
+}
+
+function showAlert(message, type = 'info') {
+    if (type === 'error') alert('Error: ' + message);
+    else if (type === 'success') alert('Success: ' + message);
+    else alert(message);
+}
+
+async function approveRequest(requestId) {
+    log('Processing approval for:', requestId);
+
+    if (!confirm('Are you sure you want to approve this removal request? This will remove the student from the course.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/admin/removal-request/approve/${requestId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notes: 'Approved by administrator' })
+        });
+
+        const data = await response.json();
+        log('Approval response:', data);
+
+        if (data.success) {
+            showAlert('Request approved successfully! The student has been removed from the course.', 'success');
+            setTimeout(() => location.reload(), 800);
+        } else {
+            showAlert(data.message || 'Failed to approve request', 'error');
+        }
+    } catch (error) {
+        log('Error approving request:', error);
+        showAlert('An error occurred: ' + error.message, 'error');
+    }
+}
+
+async function rejectRequest(requestId) {
+    log('Processing rejection for:', requestId);
+
+    const reason = prompt('Please provide a reason for rejecting this request:');
+    if (reason === null) return;
+
+    if (!reason.trim()) {
+        showAlert('Please provide a reason for rejection.', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/admin/removal-request/reject/${requestId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notes: reason })
+        });
+
+        const data = await response.json();
+        log('Rejection response:', data);
+
+        if (data.success) {
+            showAlert('Request rejected successfully! The student remains in the course.', 'success');
+            setTimeout(() => location.reload(), 800);
+        } else {
+            showAlert(data.message || 'Failed to reject request', 'error');
+        }
+    } catch (error) {
+        log('Error rejecting request:', error);
+        showAlert('An error occurred: ' + error.message, 'error');
+    }
+}
+
+async function showRequestDetails(requestId) {
+    log('Loading details for:', requestId);
+
+    try {
+        const response = await fetch(`/api/removal-request/details/${requestId}`);
+        const data = await response.json();
+
+        if (!data.success) {
+            showAlert('Failed to load details: ' + (data.message || 'Unknown error'), 'error');
+            return;
+        }
+
+        const request = data.request;
+
+        const badgeClass =
+            request.status === 'pending' ? 'bg-warning text-dark' :
+            request.status === 'approved' ? 'bg-success' :
+            'bg-danger';
+
+        const content = `
+            <h6>Request Details</h6>
+            <hr>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Request Date:</strong><br>${new Date(request.created_at).toLocaleString()}</p>
+                    <p><strong>Status:</strong><br>
+                        <span class="badge ${badgeClass}">${(request.status || '').toUpperCase()}</span>
+                    </p>
+                    <p><strong>Course:</strong><br>${request.course.code} - ${request.course.name}</p>
+                    <p><strong>Lecturer:</strong><br>${request.lecturer.user.name}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Student:</strong><br>${request.student.user.name} (${request.student.student_id})</p>
+                    <p><strong>Removal Reason:</strong></p>
+                    <div class="border p-2 bg-light">
+                        ${request.reason || 'No reason provided'}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('requestDetailsContent').innerHTML = content;
+
+        const modalEl = document.getElementById('requestDetailsModal');
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        modal.show();
+
+    } catch (error) {
+        log('Error loading details:', error);
+        showAlert('Failed to load details: ' + error.message, 'error');
+    }
+}
+
+function showFullReason(requestId) {
+    const row = document.querySelector(`tr[data-request-id="${requestId}"]`);
+    if (!row) return;
+
+    const fullReason = row.getAttribute('data-full-reason') || '';
+    document.getElementById('fullReasonContent').innerHTML = `
+        <div class="border p-3 bg-light" style="white-space: pre-wrap;">
+            ${fullReason}
+        </div>
+    `;
+
+    const modalEl = document.getElementById('fullReasonModal');
+    const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modal.show();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    log('Page loaded, removal requests ready');
+});
+</script>
+
+<style>
+.reason-text { max-width: 200px; word-wrap: break-word; }
+.btn-group-vertical .btn { margin-bottom: 0.25rem; min-width: 100px; }
+.btn-group-vertical .btn:last-child { margin-bottom: 0; }
+.table th { background-color: #f8f9fa; border-top: none; }
+@media (max-width: 768px) {
+    .btn-group-vertical { flex-direction: row !important; flex-wrap: wrap; gap: 5px; }
+    .btn-group-vertical .btn { margin-bottom: 0; min-width: auto; }
+    .reason-text { max-width: 150px; }
+}
+</style>
+{% endblock %}

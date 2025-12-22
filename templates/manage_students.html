@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Students - {{ course.name }}{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Manage Students: {{ course.name }}</h1>
+    <p>Course Code: {{ course.code }} | Lecturer: {{ course.lecturer.user.name }}</p>
+    <a href="{{ url_for('lecturer_dashboard') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="table-container">
+            <h2>Enrolled Students ({{ course.students|length }}/{{ course.max_capacity }})</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Name</th>
+                        <th>Major</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in course.students %}
+                    <tr>
+                        <td>{{ student.student_id }}</td>
+                        <td>{{ student.user.name }}</td>
+                        <td>{{ student.major or 'N/A' }}</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm request-removal" 
+                                    data-student-id="{{ student.id }}"
+                                    data-student-name="{{ student.user.name }}">
+                                <i class="fas fa-user-minus"></i> Request Removal
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center">No students enrolled in this course</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="table-container">
+            <h2>Available Students</h2>
+            <div class="search-box">
+                <input type="text" id="studentSearch" placeholder="Search available students...">
+                <i class="fas fa-search"></i>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Name</th>
+                        <th>Major</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="availableStudentsTable">
+                    {% for student in available_students %}
+                    <tr>
+                        <td>{{ student.student_id }}</td>
+                        <td>{{ student.user.name }}</td>
+                        <td>{{ student.major or 'N/A' }}</td>
+                        <td>
+                            <button class="btn btn-success btn-sm enroll-student" 
+                                    data-student-id="{{ student.id }}"
+                                    data-course-id="{{ course.id }}">
+                                <i class="fas fa-user-plus"></i> Enroll
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center">All students are already enrolled in this course</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Remove Student Modal -->
+<div id="removalModal" class="modal">
+    <div class="modal-content">
+        <h3>Request Student Removal</h3>
+        <p>You are requesting to remove <span id="removalStudentName"></span> from this course.</p>
+        <p class="text-warning"><strong>Note:</strong> This request will be sent to the administrator for review and approval.</p>
+        
+        <div class="form-group">
+            <label for="removalReason">Reason for Removal *</label>
+            <textarea id="removalReason" class="form-control" rows="3" placeholder="Please provide a reason for removing this student..."></textarea>
+            <small class="form-text text-muted">This reason will be reviewed by the administrator</small>
+        </div>
+        
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeRemovalModal()">Cancel</button>
+            <button type="button" class="btn btn-danger" id="submitRemovalRequest">Submit Request</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Search functionality for available students
+document.getElementById('studentSearch').addEventListener('keyup', function() {
+    const searchTerm = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#availableStudentsTable tr');
+    
+    rows.forEach(row => {
+        const studentId = row.cells[0].textContent.toLowerCase();
+        const studentName = row.cells[1].textContent.toLowerCase();
+        const major = row.cells[2].textContent.toLowerCase();
+        
+        const matchesSearch = studentId.includes(searchTerm) || 
+                            studentName.includes(searchTerm) || 
+                            major.includes(searchTerm);
+        
+        row.style.display = matchesSearch ? '' : 'none';
+    });
+});
+
+// Enroll student functionality
+document.querySelectorAll('.enroll-student').forEach(button => {
+    button.addEventListener('click', function() {
+        const studentId = this.dataset.studentId;
+        const courseId = this.dataset.courseId;
+        
+        fetch('/api/course/add-student', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                course_id: courseId,
+                student_id: studentId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Student enrolled successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while enrolling the student.');
+        });
+    });
+});
+
+// Removal request functionality
+let currentRemovalStudentId = null;
+let currentRemovalCourseId = null;
+
+document.querySelectorAll('.request-removal').forEach(button => {
+    button.addEventListener('click', function() {
+        const studentId = this.dataset.studentId;
+        const studentName = this.dataset.studentName;
+        
+        currentRemovalStudentId = studentId;
+        currentRemovalCourseId = '{{ course.id }}';
+        
+        document.getElementById('removalStudentName').textContent = studentName;
+        document.getElementById('removalReason').value = '';
+        document.getElementById('removalModal').style.display = 'block';
+    });
+});
+
+document.getElementById('submitRemovalRequest').addEventListener('click', function() {
+    const reason = document.getElementById('removalReason').value.trim();
+    
+    if (!reason) {
+        alert('Please provide a reason for the removal request.');
+        return;
+    }
+    
+    fetch('/api/course/remove-student', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            course_id: currentRemovalCourseId,
+            student_id: currentRemovalStudentId,
+            reason: reason
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message || 'Removal request submitted successfully! Administrator will review your request.');
+            closeRemovalModal();
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while submitting the removal request.');
+    });
+});
+
+function closeRemovalModal() {
+    document.getElementById('removalModal').style.display = 'none';
+    currentRemovalStudentId = null;
+    currentRemovalCourseId = null;
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('removalModal');
+    if (event.target == modal) {
+        closeRemovalModal();
+    }
+}
+</script>
+
+<style>
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 10% auto;
+    padding: 30px;
+    border-radius: 8px;
+    width: 500px;
+    max-width: 90%;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.modal-actions {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+</style>
+{% endblock %}

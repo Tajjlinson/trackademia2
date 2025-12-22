@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+{% block title %}Student Profile{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-user-graduate mr-2"></i>Student Profile
+        </h1>
+    </div>
+
+    <div class="row">
+        <!-- Left Column: Profile Info -->
+        <div class="col-lg-8">
+            <!-- Profile Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-user-circle mr-2"></i>Profile Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            <div class="profile-image mb-3">
+                                <i class="fas fa-user-graduate fa-5x text-primary"></i>
+                            </div>
+                            <h5 class="font-weight-bold">{{ user.name }}</h5>
+                            <span class="badge badge-warning">Student</span>
+                        </div>
+                        
+                        <div class="col-md-9">
+                            <div class="table-responsive">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <th width="30%">Full Name:</th>
+                                        <td>{{ user.name }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Username:</th>
+                                        <td>{{ user.username }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Email:</th>
+                                        <td>{{ user.email or 'Not set' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Student ID:</th>
+                                        <td>{{ student.student_id if student else 'N/A' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Major:</th>
+                                        <td>{{ student.major if student else 'N/A' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Enrollment Year:</th>
+                                        <td>{{ student.enrollment_year if student else 'N/A' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Account Status:</th>
+                                        <td>
+                                            {% if user.is_active %}
+                                            <span class="badge badge-success">
+                                                <i class="fas fa-check-circle"></i> Active
+                                            </span>
+                                            {% else %}
+                                            <span class="badge badge-danger">
+                                                <i class="fas fa-times-circle"></i> Inactive
+                                            </span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Member Since:</th>
+                                        <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-light">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                        <i class="fas fa-edit me-1"></i>Edit Profile
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Courses & Attendance Card -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-book mr-2"></i>Course Enrollment & Attendance
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if courses %}
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Course</th>
+                                    <th>Lecturer</th>
+                                    <th>Sessions</th>
+                                    <th>Attended</th>
+                                    <th>Attendance Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for course_data in courses %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ course_data.course.code }}</strong><br>
+                                        <small class="text-muted">{{ course_data.course.name }}</small>
+                                    </td>
+                                    <td>{{ course_data.course.lecturer.user.name if course_data.course.lecturer else 'N/A' }}</td>
+                                    <td>{{ course_data.total_sessions }}</td>
+                                    <td>{{ course_data.attended_sessions }}</td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar {% if course_data.attendance_rate >= 80 %}bg-success{% elif course_data.attendance_rate >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                 role="progressbar" 
+                                                 style="width: '{{ course_data.attendance_rate }}' + '%'"
+                                                 aria-valuenow="{{ course_data.attendance_rate }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                                {{ course_data.attendance_rate }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Not enrolled in any courses</h5>
+                        <p class="text-muted">Contact your lecturer or administrator to get enrolled in courses</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column: Stats -->
+        <div class="col-lg-4">
+            <!-- Attendance Summary Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-line mr-2"></i>Attendance Summary
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center">
+                        {% if courses %}
+                            {% set total_sessions = courses|sum(attribute='total_sessions') %}
+                            {% set total_attended = courses|sum(attribute='attended_sessions') %}
+                            {% set overall_rate = (total_attended / total_sessions * 100) if total_sessions > 0 else 0 %}
+                            
+                            <div class="h1 mb-3 {% if overall_rate >= 80 %}text-success{% elif overall_rate >= 60 %}text-warning{% else %}text-danger{% endif %}">
+                                {{ overall_rate|round(1) }}%
+                            </div>
+                            <h6 class="font-weight-bold">Overall Attendance</h6>
+                            <p class="text-muted">
+                                {{ total_attended }} of {{ total_sessions }} sessions attended
+                            </p>
+                        {% else %}
+                            <div class="h1 mb-3 text-muted">0%</div>
+                            <h6 class="font-weight-bold">No Attendance Data</h6>
+                            <p class="text-muted">Not enrolled in any courses</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Account Info Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-info-circle mr-2"></i>Account Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>User ID:</strong><br>
+                    <span class="text-muted">{{ user.id }}</span></p>
+                    
+                    <p><strong>Account Type:</strong><br>
+                    <span class="badge badge-warning">{{ user.user_type|capitalize }}</span></p>
+                    
+                    <p><strong>Total Courses:</strong><br>
+                    <span class="font-weight-bold">{{ courses|length }}</span></p>
+                    
+                    <p><strong>Account Created:</strong><br>
+                    {{ user.created_at.strftime('%B %d, %Y') }}</p>
+                    
+                    <p><strong>Profile Last Updated:</strong><br>
+                    {{ user.created_at.strftime('%B %d, %Y') }}</p>
+                </div>
+            </div>
+            
+            <!-- Quick Links Card -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-external-link-alt mr-2"></i>Quick Links
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        <a href="{{ url_for('mark_attendance') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-clipboard-check mr-2"></i>Mark Attendance
+                        </a>
+                        <a href="{{ url_for('attendance_analytics') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-chart-pie mr-2"></i>Attendance Analytics
+                        </a>
+                        <a href="{{ url_for('student_dashboard') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<!-- Add this modal section to student_profile.html -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Edit Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="profileForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Full Name *</label>
+                                <input type="text" class="form-control" id="name" 
+                                       value="{{ user.name }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="email" 
+                                       value="{{ user.email or '' }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="student_id" class="form-label">Student ID</label>
+                                <input type="text" class="form-control" id="student_id" 
+                                       value="{{ student.student_id if student else '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="major" class="form-label">Major</label>
+                                <input type="text" class="form-control" id="major" 
+                                       value="{{ student.major if student else '' }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="enrollment_year" class="form-label">Enrollment Year</label>
+                                <input type="number" class="form-control" id="enrollment_year" 
+                                       value="{{ student.enrollment_year if student else '' }}" 
+                                       min="2000" max="2030">
+                            </div>
+                            <hr>
+                            <h6>Change Password</h6>
+                            <div class="mb-3">
+                                <label for="current_password" class="form-label">Current Password</label>
+                                <input type="password" class="form-control" id="current_password">
+                            </div>
+                            <div class="mb-3">
+                                <label for="new_password" class="form-label">New Password</label>
+                                <input type="password" class="form-control" id="new_password">
+                            </div>
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                <input type="password" class="form-control" id="confirm_password">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveProfile()">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+function saveProfile() {
+    const name = document.getElementById('name').value;
+    const email = document.getElementById('email').value;
+    const student_id = document.getElementById('student_id').value;
+    const major = document.getElementById('major').value;
+    const enrollment_year = document.getElementById('enrollment_year').value;
+    const current_password = document.getElementById('current_password').value;
+    const new_password = document.getElementById('new_password').value;
+    const confirm_password = document.getElementById('confirm_password').value;
+    
+    if (new_password) {
+        if (!current_password) {
+            alert('Please enter your current password');
+            return;
+        }
+        if (new_password !== confirm_password) {
+            alert('New passwords do not match');
+            return;
+        }
+        if (new_password.length < 6) {
+            alert('Password must be at least 6 characters');
+            return;
+        }
+    }
+    
+    const data = {
+        name: name,
+        email: email,
+        student_id: student_id,
+        major: major,
+        enrollment_year: enrollment_year,
+        current_password: current_password,
+        new_password: new_password
+    };
+    
+    fetch('/profile/update', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message || 'Profile updated successfully');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editProfileModal'));
+            modal.hide();
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while updating profile');
+    });
+}
+</script>
+{% endblock %}
+
+<style>
+.profile-image {
+    padding: 20px;
+    border-radius: 50%;
+    background-color: #f8f9fc;
+    display: inline-block;
+}
+
+.table-borderless th {
+    font-weight: 600;
+    color: #495057;
+}
+
+.progress {
+    border-radius: 10px;
+}
+
+.list-group-item {
+    border-left: none;
+    border-right: none;
+}
+
+.list-group-item:first-child {
+    border-top: none;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Lecturer Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Welcome, {{ lecturer.user.name }}</h1>
+    <p>Department: {{ lecturer.department }}</p>
+</div>
+
+<div class="dashboard-cards">
+    <div class="card">
+        <div class="card-icon bg-primary">
+            <i class="fas fa-book"></i>
+        </div>
+        <h3>{{ courses|length }}</h3>
+        <p>Total Courses</p>
+    </div>
+    
+    <div class="card">
+        <div class="card-icon bg-success">
+            <i class="fas fa-calendar"></i>
+        </div>
+        <h3>{{ total_sessions }}</h3>
+        <p>Total Sessions</p>
+    </div>
+    
+    <div class="card">
+        <div class="card-icon bg-warning">
+            <i class="fas fa-users"></i>
+        </div>
+        <h3>{{ total_students }}</h3>
+        <p>Total Students</p>
+    </div>
+    
+    <div class="card">
+        <div class="card-icon bg-danger">
+            <i class="fas fa-bell"></i>
+        </div>
+        <h3>{{ active_sessions|length }}</h3>
+        <p>Active Sessions</p>
+    </div>
+</div>
+
+<div class="table-container">
+    <h2>My Courses</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Course Code</th>
+                <th>Course Name</th>
+                <th>Students Enrolled</th>
+                <th>Total Sessions</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for course in courses %}
+            <tr>
+                <td>{{ course.code }}</td>
+                <td>{{ course.name }}</td>
+                <td>{{ course.students|length }}</td>
+                <td>{{ course.sessions|length }}</td>
+                <td>
+                    <a href="{{ url_for('manage_students', course_id=course.id) }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-user-plus"></i> Manage Students
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-info shadow h-100 py-2">
+        <div class="card-body">
+            <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                        My Profile
+                    </div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                        {{ name }}
+                    </div>
+                    <div class="mt-2 mb-0 text-muted text-xs">
+                        <a href="{{ url_for('lecturer_profile') }}" class="text-info">
+                            View Profile <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <i class="fas fa-chalkboard-teacher fa-2x text-gray-300"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="table-container">
+    <h2>Active Sessions</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Session Name</th>
+                <th>Course</th>
+                <th>Date & Time</th>
+                <th>Location</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for session in active_sessions %}
+            <tr>
+                <td>{{ session.name }}</td>
+                <td>{{ session.course.name }}</td>
+                <td>{{ session.date }} at {{ session.start_time.strftime('%I:%M %p') }}</td>
+                <td>{{ session.location }}</td>
+                <td>
+                    <span class="status-badge status-active">
+                        <i class="fas fa-circle"></i> Active
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

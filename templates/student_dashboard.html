@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Welcome, {{ student.user.name }}</h1>
+    <p>Student ID: {{ student.student_id }}</p>
+</div>
+
+<div class="dashboard-cards">
+    <div class="card">
+        <div class="card-icon bg-primary">
+            <i class="fas fa-book"></i>
+        </div>
+        <h3>{{ student.courses|length }}</h3>
+        <p>Enrolled Courses</p>
+    </div>
+    
+    <div class="card">
+        <div class="card-icon bg-success">
+            <i class="fas fa-calendar-check"></i>
+        </div>
+        <h3>{{ today_active_sessions|length }}</h3>
+        <p>Today's Active Sessions</p>
+    </div>
+    
+    <div class="card">
+        <div class="card-icon bg-info">
+            <i class="fas fa-calendar-alt"></i>
+        </div>
+        <h3>{{ upcoming_sessions|length }}</h3>
+        <p>Upcoming Sessions</p>
+    </div>
+</div>
+
+{% if soon_sessions %}
+<div class="alert alert-info alert-dismissible fade show" role="alert">
+    <strong>Upcoming session reminder:</strong>
+    <ul class="mb-0">
+        {% for s in soon_sessions %}
+        <li>
+            <strong>{{ s.course.name }}</strong> – {{ s.name }}
+            starts at {{ s.start_time.strftime('%I:%M %p') }}
+            ({{ s.date.strftime('%b %d, %Y') }})
+        </li>
+        {% endfor %}
+    </ul>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
+
+
+
+{% if today_active_sessions %}
+<div class="table-container alert alert-info">
+    <h3><i class="fas fa-exclamation-circle"></i> Today's Active Sessions</h3>
+    <p>Don't forget to mark attendance for these sessions!</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Session Name</th>
+                <th>Course</th>
+                <th>Location</th>
+                <th>Time</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for session in today_active_sessions %}
+            <tr>
+                <td>{{ session.name }}</td>
+                <td>{{ session.course.name }}</td>
+                <td>{{ session.location }}</td>
+                <td>{{ session.start_time.strftime('%I:%M %p') }}</td>
+                <td>
+                    <a href="{{ url_for('mark_attendance') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-check"></i> Mark Attendance
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<div class="table-container">
+    <h2>Upcoming Sessions</h2>
+    {% if upcoming_sessions %}
+    <table>
+        <thead>
+            <tr>
+                <th>Session Name</th>
+                <th>Course</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Location</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for session in upcoming_sessions %}
+            <tr>
+                <td>{{ session.name }}</td>
+                <td>{{ session.course.name }}</td>
+                <td>{{ session.date.strftime('%b %d, %Y') }}</td>
+                <td>{{ session.start_time.strftime('%I:%M %p') }}</td>
+                <td>{{ session.location }}</td>
+                <td>
+                    <span class="badge badge-info">Upcoming</span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="text-align: center; padding: 20px; color: #64748b;">
+        No upcoming sessions scheduled.
+    </p>
+    {% endif %}
+</div>
+
+
+<div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-warning shadow h-100 py-2">
+        <div class="card-body">
+            <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                        My Profile
+                    </div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                        {{ name }}
+                    </div>
+                    <div class="mt-2 mb-0 text-muted text-xs">
+                        <a href="{{ url_for('student_profile') }}" class="text-warning">
+                            View Profile <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <i class="fas fa-user-graduate fa-2x text-gray-300"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="table-container">
+    <h2>My Courses</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Course Code</th>
+                <th>Course Name</th>
+                <th>Lecturer</th>
+                <th>Total Sessions</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for course in student.courses %}
+            <tr>
+                <td>{{ course.code }}</td>
+                <td>{{ course.name }}</td>
+                <td>
+                    {% if course.lecturer and course.lecturer.user %}
+                        {{ course.lecturer.user.name }}
+                    {% else %}
+                        Dr. Ricardo Anderson
+                    {% endif %}
+                </td>
+                <td>{{ course.sessions|length }}</td>
+                <td>
+                    <span class="badge badge-success">Active</span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}My Sessions{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1><i class="fas fa-calendar-alt"></i> My Sessions</h1>
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Session Name</th>
+                <th>Course</th>
+                <th>Date & Time</th>
+                <th>Location</th>
+                <th>Distance</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for session in sessions %}
+            <tr>
+                <td>{{ session.name }}</td>
+                <td>{{ session.course.name }}</td>
+                <td>{{ session.date }} at {{ session.start_time.strftime('%I:%M %p') }}</td>
+                <td>{{ session.location }}</td>
+                <td>{{ session.allowed_distance_meters }}m</td>
+                <td>
+                    {% if session.status == 'active' %}
+                    <span class="status-badge status-active">
+                        <i class="fas fa-play-circle"></i> Active
+                    </span>
+                    {% elif session.status == 'upcoming' %}
+                    <span class="status-badge status-upcoming">
+                        <i class="fas fa-clock"></i> Upcoming
+                    </span>
+                    {% else %}
+                    <span class="status-badge status-past">
+                        <i class="fas fa-check-circle"></i> Past
+                    </span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if session.status == 'active' %}
+                    <button onclick="updateSessionStatus('{{ session.id }}', 'past')" class="btn btn-danger btn-sm">
+                        <i class="fas fa-stop"></i> End Session
+                    </button>
+                    {% elif session.status == 'upcoming' %}
+                    <button onclick="updateSessionStatus('{{ session.id }}', 'active')" class="btn btn-success btn-sm">
+                        <i class="fas fa-play"></i> Start Session
+                    </button>
+                    {% endif %}
+                    
+                    {% if session.status != 'active' %}
+                    <button onclick="updateSessionStatus('{{ session.id }}', 'active')" class="btn btn-warning btn-sm">
+                        <i class="fas fa-redo"></i> Activate
+                    </button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

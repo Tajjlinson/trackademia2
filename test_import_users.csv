@@ -1,0 +1,8 @@
+username,name,email,password,user_type,student_id,major,enrollment_year,employee_id,department,office_location,office_hours,role
+admin_test2,Admin Tester 2,admin_test2_1216@trackademia.edu,Pass123!,admin,,,,,,,,System Administrator
+lecturer_test2,Dr Lisa Brown,lisa.brown_1216@trackademia.edu,Pass123!,lecturer,,,,L201,Computing,Room 2,MW 1-3,
+student_test3,John Doe,john.doe_1216@student.trackademia.edu,Pass123!,student,620555990,Computer Science,2024,,,,,
+student_test4,Jane Smith,jane.smith_1216@student.trackademia.edu,Pass123!,student,620555991,Information Systems,2023,,,,,
+student_test5,Emily Johnson,emilyjohnny@mymona.uwi.edu,Pass123!,student,620555992,Software Engineering,2025,,,,,
+Shackaylin, Shamaya Lindsay, sackaylinlindsay@myutech.utech.edu, Pass123!,student, 204567890, Pharmacy, 2024,,,,,
+Sharondenny, Sharon Denny Tomlinson, sdennytomlinson@trackademia.edu, Pass123!,lecturer,,,,L305, English Language, English Admin Room 7B, Tuesday - Thursday & Wednesday 10AM-12PM,

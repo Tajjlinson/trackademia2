@@ -1,0 +1,420 @@
+{% extends "base.html" %}
+{% block title %}Admin - Course Enrollments{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-user-graduate mr-2"></i>Course Enrollments Management
+        </h1>
+    </div>
+
+    <!-- Course Information Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-info-circle mr-2"></i>Course Information
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>{{ course.code }} - {{ course.name }}</h5>
+                    <p class="text-muted">{{ course.description }}</p>
+                    <p><strong>Lecturer:</strong> {{ course.lecturer.user.name }}</p>
+                    <p><strong>Semester:</strong> {{ course.semester }}</p>
+                </div>
+                <div class="col-md-6">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="card border-left-primary shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                                Enrolled Students
+                                            </div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800 enrollment-count">
+                                                {{ enrolled_students|length }} / {{ course.max_capacity }}
+                                            </div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        {% set percentage = (enrolled_students|length / course.max_capacity * 100) if course.max_capacity > 0 else 0 %}
+                        {% set percentage_int = percentage|round|int %}
+                        <div class="progress">
+                            <div class="progress-bar 
+                                {% if percentage >= 90 %}
+                                    bg-danger
+                                {% elif percentage >= 75 %}
+                                    bg-warning
+                                {% else %}
+                                    bg-success
+                                {% endif %}" 
+                                role="progressbar" 
+                                style="width: '{{ percentage_int }}' + '%';"
+                                aria-valuenow="{{ enrolled_students|length }}" 
+                                aria-valuemin="0" 
+                                aria-valuemax="{{ course.max_capacity }}">
+                                {{ percentage_int }}% Full
+                            </div>
+                        </div>
+                        <small class="text-muted">Capacity: {{ enrolled_students|length }} / {{ course.max_capacity }} students</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="row">
+        <!-- Left Column: Enrolled Students -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-user-check mr-2"></i>Enrolled Students ({{ enrolled_students|length }})
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if enrolled_students %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="enrolledTable" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Student ID</th>
+                                    <th>Name</th>
+                                    <th>Major</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in enrolled_students %}
+                                <tr id="student-{{ student.id }}">
+                                    <td>{{ student.student_id }}</td>
+                                    <td>{{ student.user.name }}</td>
+                                    <td>{{ student.major }}</td>
+                                    <td>
+                                        <button class="btn btn-danger btn-sm unenroll-btn" 
+                                            data-student-id="{{ student.id }}"
+                                            title="Remove from course">
+                                        <i class="fas fa-user-minus"></i>
+                                    </button>
+
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No students enrolled in this course</h5>
+                        <p class="text-muted">Add students using the form on the right</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Add Students -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-user-plus mr-2"></i>Add Students to Course
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <!-- Search and Filter Section -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="input-group">
+                                <input type="text" id="studentSearch" class="form-control" 
+                                       placeholder="Search students by name or ID..." 
+                                       onkeyup="filterStudents()">
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="filterStudents()">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Available Students Table -->
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-hover" id="availableTable" width="100%" cellspacing="0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Student ID</th>
+                                    <th>Name</th>
+                                    <th>Major</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="availableStudentsBody">
+                                {% for student in available_students %}
+                                <tr id="available-{{ student.id }}">
+                                    <td>{{ student.student_id }}</td>
+                                    <td>{{ student.user.name }}</td>
+                                    <td>{{ student.major }}</td>
+                                    <td>
+                                        <button class="btn btn-success btn-sm enroll-btn"
+                                            data-student-id="{{ student.id }}"
+                                            data-course-id="{{ course.id }}"
+                                            title="Add to course">
+                                        <i class="fas fa-plus"></i> Add
+                                    </button>
+
+                                    </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% if not available_students %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                        <h5 class="text-muted">All students are enrolled in this course</h5>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back Button -->
+    <div class="row">
+        <div class="col-12">
+            <a href="{{ url_for('admin_courses') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left mr-1"></i> Back to Courses
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmationModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmationTitle"></h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="confirmationMessage">
+                <!-- Message will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmActionButton">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Global variables
+const courseId = parseInt('{{ course.id }}') || 0;
+const maxCapacity = parseInt('{{ course.max_capacity }}') || 30;
+let currentEnrollmentCount = parseInt('{{ enrolled_students|length }}') || 0;
+
+console.log('Admin Enrollments – courseId:', courseId);
+
+// Run when page is ready
+document.addEventListener('DOMContentLoaded', function () {
+    // Initialize DataTable if jQuery/DataTables is available
+    if (window.jQuery && $.fn.DataTable) {
+        $('#enrolledTable').DataTable({
+            pageLength: 10,
+            ordering: true,
+            order: [[1, 'asc']]
+        });
+    }
+
+    // 🔹 Attach click handlers for "Add" buttons
+    document.querySelectorAll('.enroll-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const studentId = this.dataset.studentId;
+            console.log('Enroll clicked – studentId:', studentId);
+            enrollStudent(studentId);
+        });
+    });
+
+    // 🔹 Attach click handlers for "Remove" buttons
+    document.querySelectorAll('.unenroll-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const studentId = this.dataset.studentId;
+            console.log('Unenroll clicked – studentId:', studentId);
+            unenrollStudent(studentId);
+        });
+    });
+
+    // Update progress bar and count
+    updateCapacityProgress();
+});
+
+// ✅ Use your existing admin endpoints
+function enrollStudent(studentId) {
+    fetch('/admin/courses/enroll', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            course_id: courseId,
+            student_id: studentId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Enroll response:', data);
+        if (data.success) {
+            alert(data.message || 'Student enrolled successfully');
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Unable to enroll student'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while enrolling student');
+    });
+}
+
+function unenrollStudent(studentId) {
+    if (!confirm('Are you sure you want to remove this student from the course?')) {
+        return;
+    }
+
+    fetch('/admin/courses/unenroll', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            course_id: courseId,
+            student_id: studentId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Unenroll response:', data);
+        if (data.success) {
+            alert(data.message || 'Student removed successfully');
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Unable to remove student'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while removing student');
+    });
+}
+
+// Update capacity progress bar + text
+function updateCapacityProgress() {
+    const percentage = (currentEnrollmentCount / maxCapacity) * 100;
+    const percentageInt = Math.round(percentage);
+
+    const progressBar = document.querySelector('.progress-bar');
+    if (progressBar) {
+        progressBar.style.width = percentageInt + '%';
+        progressBar.textContent = percentageInt + '%';
+
+        progressBar.classList.remove('bg-success', 'bg-warning', 'bg-danger');
+
+        if (percentage >= 100) {
+            progressBar.classList.add('bg-danger');
+        } else if (percentage >= 75) {
+            progressBar.classList.add('bg-warning');
+        } else {
+            progressBar.classList.add('bg-success');
+        }
+    }
+
+    const enrollmentCountElement = document.querySelector('.enrollment-count');
+    if (enrollmentCountElement) {
+        enrollmentCountElement.textContent =
+            currentEnrollmentCount + ' / ' + maxCapacity + ' students';
+    }
+}
+</script>
+
+
+<style>
+.card {
+    margin-bottom: 1.5rem;
+    border: 1px solid #e3e6f0;
+    border-radius: 0.35rem;
+}
+
+.card-header {
+    background-color: #f8f9fc;
+    border-bottom: 1px solid #e3e6f0;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+}
+
+.progress {
+    height: 1.5rem;
+    border-radius: 0.35rem;
+}
+
+.progress-bar {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.table-responsive::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.075);
+}
+
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+}
+</style>
+{% endblock %}

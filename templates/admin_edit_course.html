@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Course - Admin{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Edit Course: {{ course.name }}</h1>
+    <div class="header-actions">
+        <a href="{{ url_for('admin_courses') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Courses
+        </a>
+        <a href="{{ url_for('admin_course_enrollments', course_id=course.id) }}" class="btn btn-info">
+            <i class="fas fa-users"></i> Manage Enrollments
+        </a>
+    </div>
+</div>
+
+<div class="course-info-header">
+    <div class="course-code">
+        <h3>{{ course.code }}</h3>
+    </div>
+    <div class="course-status">
+        {% if course.is_active %}
+        <span class="status-badge status-active">
+            <i class="fas fa-check-circle"></i> Active
+        </span>
+        {% else %}
+        <span class="status-badge status-inactive">
+            <i class="fas fa-times-circle"></i> Inactive
+        </span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="form-container">
+    <form method="POST" action="{{ url_for('admin_edit_course', course_id=course.id) }}">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="code">Course Code *</label>
+                    <input type="text" id="code" name="code" class="form-control" 
+                           value="{{ course.code }}" required>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="name">Course Name *</label>
+                    <input type="text" id="name" name="name" class="form-control" 
+                           value="{{ course.name }}" required>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Course Description</label>
+            <textarea id="description" name="description" class="form-control" rows="3">{{ course.description or '' }}</textarea>
+            <small class="form-text text-muted">Brief description of the course objectives and content</small>
+        </div>
+
+        <div class="row">
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="credits">Credits</label>
+                    <select id="credits" name="credits" class="form-control">
+                        {% for i in range(1, 7) %}
+                        <option value="{{ i }}" {{ 'selected' if course.credits == i else '' }}>
+                            {{ i }} credit{{ 's' if i > 1 else '' }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="semester">Semester *</label>
+                    <input type="text" id="semester" name="semester" class="form-control" 
+                           value="{{ course.semester }}" required placeholder="e.g., Fall 2024">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="max_capacity">Maximum Capacity</label>
+                    <input type="number" id="max_capacity" name="max_capacity" class="form-control" 
+                           value="{{ course.max_capacity }}" min="10" max="200" required>
+                    <small class="form-text text-muted">Current: {{ course.students|length }} enrolled</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="lecturer_id">Assigned Lecturer *</label>
+                    <select id="lecturer_id" name="lecturer_id" class="form-control" required>
+                        <option value="">Select Lecturer</option>
+                        {% for lecturer in lecturers %}
+                        <option value="{{ lecturer.id }}" 
+                                {{ 'selected' if lecturer.id == course.lecturer_id else '' }}>
+                            {{ lecturer.user.name }} - {{ lecturer.department }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="course-stats">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-content">
+                    <h4>{{ course.students|length }}</h4>
+                    <p>Enrolled Students</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                </div>
+                <div class="stat-content">
+                    <h4>{{ course.sessions|length }}</h4>
+                    <p>Total Sessions</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <div class="stat-content">
+                    <h4>{{ course.created_at.strftime('%Y-%m-%d') }}</h4>
+                    <p>Created Date</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="is_active">Course Status</label>
+            <div class="checkbox-group">
+                <input type="checkbox" id="is_active" name="is_active" value="true" 
+                       {{ 'checked' if course.is_active else '' }}>
+                <label for="is_active">Active Course</label>
+                <small class="form-text text-muted">
+                    Inactive courses won't be available for new sessions or enrollments
+                </small>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+            <a href="{{ url_for('admin_courses') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<style>
+.course-info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+    color: white;
+}
+
+.course-code h3 {
+    margin: 0;
+    font-size: 1.8rem;
+    color: white;
+}
+
+.course-status .status-badge {
+    font-size: 1rem;
+    padding: 8px 20px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border: none;
+}
+
+.course-stats {
+    display: flex;
+    gap: 20px;
+    margin: 30px 0;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    background-color: white;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    flex: 1;
+}
+
+.stat-icon {
+    margin-right: 15px;
+    font-size: 2rem;
+    color: #007bff;
+}
+
+.stat-content h4 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #333;
+}
+
+.stat-content p {
+    margin: 5px 0 0 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.form-actions .btn {
+    min-width: 120px;
+}
+</style>
+
+<script>
+// Validate capacity is not less than current enrollments
+document.getElementById('max_capacity').addEventListener('change', function() {
+    const currentEnrollments = '{{ course.students|length }}';
+    const newCapacity = parseInt(this.value);
+    
+    if (newCapacity < currentEnrollments) {
+        alert(`Warning: Cannot set capacity below current enrollments (${currentEnrollments} students).\nPlease remove some students first.`);
+        this.value = currentEnrollments;
+    }
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(event) {
+    const code = document.getElementById('code').value.trim();
+    const name = document.getElementById('name').value.trim();
+    const semester = document.getElementById('semester').value.trim();
+    const lecturer = document.getElementById('lecturer_id').value;
+    
+    if (!code || !name || !semester || !lecturer) {
+        event.preventDefault();
+        alert('Please fill in all required fields (marked with *)');
+        return false;
+    }
+    
+    // Validate course code format (optional)
+    if (!/^[A-Z]{3,4}\d{4}$/.test(code)) {
+        if (!confirm(`Course code "${code}" doesn't match typical format (e.g., COMP2140). Continue anyway?`)) {
+            event.preventDefault();
+            return false;
+        }
+    }
+    
+    return true;
+});
+</script>
+{% endblock %}

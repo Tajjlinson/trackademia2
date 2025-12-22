@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% block title %}Admin - Create User{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-user-plus mr-2"></i>Create New User
+        </h1>
+        <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left mr-1"></i> Back to Users
+        </a>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="close" data-dismiss="alert">
+                        <span>&times;</span>
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Form Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">User Information</h6>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('admin_create_user') }}" id="createUserForm">
+                <div class="row">
+                    <!-- Basic Information -->
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="user_type" class="font-weight-bold">User Type *</label>
+                            <select class="form-control" id="user_type" name="user_type" required>
+                                <option value="">Select user type...</option>
+                                <option value="student">Student</option>
+                                <option value="lecturer">Lecturer</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="username" class="font-weight-bold">Username *</label>
+                            <input type="text" class="form-control" id="username" name="username" required 
+                                   placeholder="Enter username">
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="name" class="font-weight-bold">Full Name *</label>
+                            <input type="text" class="form-control" id="name" name="name" required 
+                                   placeholder="Enter full name">
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="email">Email Address</label>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   placeholder="Enter email address">
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="password" class="font-weight-bold">Password *</label>
+                            <input type="password" class="form-control" id="password" name="password" required 
+                                   placeholder="Enter password (min. 6 characters)">
+                        </div>
+                    </div>
+                    
+                    <!-- Dynamic Fields Based on User Type -->
+                    <div class="col-md-6">
+                        <!-- Student Fields -->
+                        <div id="studentFields" style="display: none;">
+                            <h6 class="mb-3 text-primary"><i class="fas fa-user-graduate mr-2"></i>Student Information</h6>
+                            <div class="form-group mb-3">
+                                <label for="student_id">Student ID</label>
+                                <input type="text" class="form-control" id="student_id" name="student_id" 
+                                       placeholder="e.g., 620163325">
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="enrollment_year">Enrollment Year</label>
+                                <input type="number" class="form-control" id="enrollment_year" name="enrollment_year" 
+                                       min="2000" max="2030" value="2024">
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="major">Major/Program</label>
+                                <input type="text" class="form-control" id="major" name="major" 
+                                       placeholder="e.g., Computer Science">
+                            </div>
+                        </div>
+                        
+                        <!-- Lecturer Fields -->
+                        <div id="lecturerFields" style="display: none;">
+                            <h6 class="mb-3 text-primary"><i class="fas fa-chalkboard-teacher mr-2"></i>Lecturer Information</h6>
+                            <div class="form-group mb-3">
+                                <label for="employee_id">Employee ID</label>
+                                <input type="text" class="form-control" id="employee_id" name="employee_id" 
+                                       placeholder="e.g., EMP001">
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="department">Department</label>
+                                <input type="text" class="form-control" id="department" name="department" 
+                                       placeholder="e.g., Computer Science">
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="office_location">Office Location</label>
+                                <input type="text" class="form-control" id="office_location" name="office_location" 
+                                       placeholder="e.g., CS Building Room 205">
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="office_hours">Office Hours</label>
+                                <input type="text" class="form-control" id="office_hours" name="office_hours" 
+                                       placeholder="e.g., Mon-Wed 10AM-12PM">
+                            </div>
+                        </div>
+                        
+                        <!-- Admin Fields -->
+                        <div id="adminFields" style="display: none;">
+                            <h6 class="mb-3 text-primary"><i class="fas fa-user-shield mr-2"></i>Admin Information</h6>
+                            <div class="form-group mb-3">
+                                <label for="role">Admin Role</label>
+                                <select class="form-control" id="role" name="role">
+                                    <option value="administrator">Administrator</option>
+                                    <option value="super_admin">Super Admin</option>
+                                    <option value="support">Support</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4 pt-3 border-top">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save mr-1"></i> Create User
+                    </button>
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">
+                        <i class="fas fa-times mr-1"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const userTypeSelect = document.getElementById('user_type');
+    const studentFields = document.getElementById('studentFields');
+    const lecturerFields = document.getElementById('lecturerFields');
+    const adminFields = document.getElementById('adminFields');
+    
+    // Show/hide fields based on user type selection
+    function toggleUserTypeFields() {
+        // Hide all fields first
+        studentFields.style.display = 'none';
+        lecturerFields.style.display = 'none';
+        adminFields.style.display = 'none';
+        
+        // Show relevant fields
+        if (userTypeSelect.value === 'student') {
+            studentFields.style.display = 'block';
+        } else if (userTypeSelect.value === 'lecturer') {
+            lecturerFields.style.display = 'block';
+        } else if (userTypeSelect.value === 'admin') {
+            adminFields.style.display = 'block';
+        }
+    }
+    
+    userTypeSelect.addEventListener('change', toggleUserTypeFields);
+    
+    // Form validation
+    document.getElementById('createUserForm').addEventListener('submit', function(e) {
+        const userType = document.getElementById('user_type').value;
+        const username = document.getElementById('username').value.trim();
+        const name = document.getElementById('name').value.trim();
+        const password = document.getElementById('password').value;
+        
+        if (!userType) {
+            e.preventDefault();
+            alert('Please select a user type.');
+            userTypeSelect.focus();
+            return false;
+        }
+        
+        if (!username) {
+            e.preventDefault();
+            alert('Please enter a username.');
+            document.getElementById('username').focus();
+            return false;
+        }
+        
+        if (!name) {
+            e.preventDefault();
+            alert('Please enter the full name.');
+            document.getElementById('name').focus();
+            return false;
+        }
+        
+        if (!password) {
+            e.preventDefault();
+            alert('Please enter a password.');
+            document.getElementById('password').focus();
+            return false;
+        }
+        
+        if (password.length < 6) {
+            e.preventDefault();
+            alert('Password must be at least 6 characters long.');
+            document.getElementById('password').focus();
+            return false;
+        }
+        
+        return true;
+    });
+});
+</script>
+
+<style>
+.card {
+    margin-bottom: 1.5rem;
+    border: 1px solid #e3e6f0;
+    border-radius: 0.35rem;
+}
+
+.card-header {
+    background-color: #f8f9fc;
+    border-bottom: 1px solid #e3e6f0;
+}
+
+.form-control {
+    border: 1px solid #d1d3e2;
+}
+
+.form-control:focus {
+    border-color: #bac8f3;
+    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+}
+
+.btn-primary {
+    background-color: #4e73df;
+    border-color: #4e73df;
+}
+
+.btn-primary:hover {
+    background-color: #2e59d9;
+    border-color: #2653d4;
+}
+
+.btn-secondary {
+    background-color: #858796;
+    border-color: #858796;
+}
+
+.font-weight-bold {
+    font-weight: 600 !important;
+}
+</style>
+{% endblock %}

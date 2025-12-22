@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Admin - Reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-chart-bar mr-2"></i>System Reports
+        </h1>
+        <a href="/admin/reports/export" class="btn btn-success">
+            <i class="fas fa-file-export mr-1"></i> Export Reports (CSV)
+        </a>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row">
+        <!-- Total Attendance Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Attendance Records
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_attendance }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clipboard-check fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Attendance Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-table mr-2"></i>Course Attendance Summary
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Course Name</th>
+                            <th>Sessions</th>
+                            <th>Attendance Records</th>
+                            <th>Average Attendance/Session</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for course_name, data in attendance_by_course.items() %}
+                        {% set avg_attendance = data.attendance / data.sessions if data.sessions > 0 else 0 %}
+                        <tr>
+                            <td>{{ course_name }}</td>
+                            <td>{{ data.sessions }}</td>
+                            <td>{{ data.attendance }}</td>
+                            <td>{{ "%.1f"|format(avg_attendance) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="font-weight-bold">
+                            <td>TOTAL</td>
+                            <td>{{ attendance_by_course.values()|sum(attribute='sessions') }}</td>
+                            <td>{{ attendance_by_course.values()|sum(attribute='attendance') }}</td>
+                            <td>
+                                {% set total_sessions_table = attendance_by_course.values()|sum(attribute='sessions') %}
+                                {% set total_attendance_table = attendance_by_course.values()|sum(attribute='attendance') %}
+                                {% if total_sessions_table > 0 %}
+                                    {{ "%.1f"|format(total_attendance_table / total_sessions_table) }}
+                                {% else %}
+                                    0.0
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-info-circle mr-2"></i>Quick Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card border-left-info mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ total_courses }}</h5>
+                                    <p class="card-text text-muted">Total Courses</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-left-success mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ total_sessions }}</h5>
+                                    <p class="card-text text-muted">Total Sessions</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-left-warning mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ total_students }}</h5>
+                                    <p class="card-text text-muted">Total Students</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-left-primary mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ total_lecturers }}</h5>
+                                    <p class="card-text text-muted">Total Lecturers</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Section -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-download mr-2"></i>Export Options
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="text-center">
+                <p class="mb-4">Click the button below to download all reports data as a CSV file.</p>
+                <a href="/admin/reports/export" class="btn btn-primary btn-lg">
+                    <i class="fas fa-file-csv mr-2"></i> Download Complete Reports (CSV)
+                </a>
+                <p class="text-muted mt-3 small">
+                    The CSV file contains detailed attendance data for all courses.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    margin-bottom: 1.5rem;
+    border: 1px solid #e3e6f0;
+    border-radius: 0.35rem;
+}
+
+.card-header {
+    background-color: #f8f9fc;
+    border-bottom: 1px solid #e3e6f0;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+}
+</style>
+{% endblock %}
