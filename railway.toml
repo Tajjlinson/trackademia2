@@ -5,9 +5,12 @@ builder = "nixpacks"
 startCommand = "gunicorn app:app --bind 0.0.0.0:$PORT"
 healthCheckPath = "/health"
 healthCheckTimeout = 300
-
+restartDelayMillis = 10000  # Wait 10 seconds before health checks
+healthCheckInterval = 30
 
 [environments]
   [environments.production]
     [environments.production.variables]
       FLASK_ENV = "production"
+      DATABASE_URL = "${DATABASE_URL}"
+      PORT = "8080"

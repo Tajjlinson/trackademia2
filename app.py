@@ -1641,6 +1641,31 @@ def start_notification_checker():
 def health():
     return "ok", 200
 
+# Add startup probe endpoint
+@app.route('/startup')
+def startup():
+    """Startup probe for Railway"""
+    try:
+        # Test database connection
+        db.session.execute('SELECT 1')
+        return "ok", 200
+    except Exception as e:
+        print(f"Startup probe failed: {e}")
+        return "not ready", 503
+
+# Add readyness probe
+@app.route('/ready')
+def ready():
+    """Readiness probe for Railway"""
+    try:
+        # Test database connection
+        db.session.execute('SELECT 1')
+        return "ok", 200
+    except Exception as e:
+        print(f"Readyness probe failed: {e}")
+        return "not ready", 503
+
+
 
 def initialize_database():
     """Initialize the database tables and data"""
@@ -1666,6 +1691,13 @@ def initialize_database():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
-    print(f"🚀 Starting Trackademia on port {port}")
-    app.run(host='0.0.0.0', port=port)
+     # Initialize database BEFORE starting the server
+    print("🚀 Initializing Trackademia...")
+    print(f"📊 Database URI: {app.config['SQLALCHEMY_DATABASE_URI'][:30]}...")
+    
+    # Initialize database
+    initialize_database()
+    
+    print(f"✅ Starting server on port {port}")
+    app.run(host='0.0.0.0', port=port, debug=False)
     
