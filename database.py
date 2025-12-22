@@ -2,10 +2,29 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, date, time, timedelta
 import sys
+import os
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
 
 
-# Create the SQLAlchemy instance
-db = SQLAlchemy()
+# Enable foreign keys for SQLite
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
+# For production, use PostgreSQL-compatible settings
+if os.environ.get('DATABASE_URL', '').startswith('postgres'):
+    # PostgreSQL settings
+    db = SQLAlchemy(engine_options={
+        'pool_size': 10,
+        'max_overflow': 20,
+        'pool_recycle': 3600,
+        'pool_pre_ping': True,
+    })
+else:
+    db = SQLAlchemy()
 
 # Association table for many-to-many relationship between Student and Course
 enrollments = db.Table('enrollments',

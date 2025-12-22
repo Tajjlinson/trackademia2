@@ -11,15 +11,32 @@ from io import BytesIO
 import csv
 import threading
 import time
-
+import os
+from urllib.parse import urlparse
+import psycopg2
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)
 CORS(app)
 
 # Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///trackademia.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+if os.environ.get('DATABASE_URL'):
+    # For PostgreSQL (Railway/Fly.io)
+    db_url = os.environ.get('DATABASE_URL')
+    result = urlparse(db_url)
+    
+    # SQLAlchemy 1.4.x uses postgresql:// not postgres://
+    if result.scheme == 'postgres':
+        db_url = db_url.replace('postgres://', 'postgresql://', 1)
+    
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_recycle': 300,
+        'pool_pre_ping': True,
+    }
+else:
+    # Local SQLite
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///trackademia.db'
 
 # Initialize the database with the app
 db.init_app(app)
@@ -1631,39 +1648,27 @@ if __name__ == '__main__':
 def initialize_database():
     """Initialize the database tables and data"""
     with app.app_context():
-        # Drop all tables (for development)
-        db.drop_all()
-        print("Dropped all tables")
-        
-        # Create all tables
-        db.create_all()
-        print("Created all tables")
-        
-        # Check if we need to create demo data
-        from database import create_demo_data
-        if db.session.query(User).count() == 0:
-            create_demo_data()
-        else:
-            print("Database already initialized")
+        try:
+            # Create all tables
+            db.create_all()
+            print("✅ Database tables created/checked")
+            
+            # Check if we need to create demo data
+            from database import create_demo_data
+            if db.session.query(User).count() == 0:
+                print("📊 Creating demo data...")
+                create_demo_data()
+                print("✅ Demo data created")
+            else:
+                print("ℹ️ Database already has data")
+                
+        except Exception as e:
+            print(f"❌ Error initializing database: {e}")
+            import traceback
+            traceback.print_exc()
 
 if __name__ == '__main__':
-    # Initialize database when starting the app
-    initialize_database()
+    port = int(os.environ.get('PORT', 5000))
+    print(f"🚀 Starting Trackademia on port {port}")
+    app.run(host='0.0.0.0', port=port)
     
-    print("\n" + "="*50)
-    print("Starting Trackademia application...")
-    print("Access the application at: http://localhost:5000")
-    print("\nDemo Credentials:")
-    print("  Admin: username='admin', password='admin123'")
-    print("  Lecturer: username='lecturer', password='password123'")
-    print("  Student: username='student', password='password123'")
-    print("  Student 2: username='student2', password='password123'")
-    print("\nAvailable Admin Routes:")
-    print("  /admin/dashboard - Admin dashboard")
-    print("  /admin/users - Manage users")
-    print("  /admin/courses - Manage courses")
-    print("  /admin/removal-requests - Review removal requests")
-    print("  /admin/reports - View system reports")
-    print("="*50 + "\n")
-    
-    app.run(debug=True, port=5000)
