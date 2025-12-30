@@ -40,6 +40,8 @@ else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///trackademia.db'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db.init_app(app)
+
 # Authentication middleware
 @app.before_request
 def require_login():
@@ -66,20 +68,19 @@ def require_admin():
 @app.route("/")
 def index():
     user_id = flask_session.get("user_id")
-    user_type = flask_session.get("user_type")  # expected: "admin" / "lecturer" / "student"
+    user_type = flask_session.get("user_type")
 
-    # Not logged in: return 200 (Railway-friendly)
+    # Not logged in → return 200 (prevents Railway health failure)
     if not user_id:
         return render_template("login.html"), 200
 
-    # Logged in: route by role
     if user_type == "admin":
         return redirect(url_for("admin_dashboard"))
     elif user_type == "lecturer":
         return redirect(url_for("lecturer_dashboard"))
     else:
-        # default to student if missing/unknown
         return redirect(url_for("student_dashboard"))
+
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -1647,6 +1648,10 @@ def start_notification_checker():
 @app.route("/health")
 def health():
     return "ok", 200
+
+@app.before_serving
+def startup_tasks():
+    initialize_database()
 
 # Add startup probe endpoint
 @app.route('/startup')
