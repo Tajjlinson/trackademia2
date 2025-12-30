@@ -29,16 +29,17 @@ if os.environ.get('DATABASE_URL'):
     
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_size': 10,
+        'max_overflow': 20,
         'pool_recycle': 300,
         'pool_pre_ping': True,
+        'pool_timeout': 30,
     }
 else:
     # Local SQLite
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///trackademia.db'
 
-# Initialize the database with the app
-db.init_app(app)
-
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Authentication middleware
 @app.before_request
 def require_login():
@@ -62,18 +63,24 @@ def require_admin():
         return redirect(url_for('index'))
 
 # Routes
-@app.route('/')
+@app.route("/")
 def index():
-    user_type = flask_session.get('user_type')
-    if not user_type:
-        return redirect(url_for('login'))
-    
-    if user_type == 'admin':
-        return redirect(url_for('admin_dashboard'))
-    elif user_type == 'lecturer':
-        return redirect(url_for('lecturer_dashboard'))
+    user_id = flask_session.get("user_id")
+    user_type = flask_session.get("user_type")  # expected: "admin" / "lecturer" / "student"
+
+    # Not logged in: return 200 (Railway-friendly)
+    if not user_id:
+        return render_template("login.html"), 200
+
+    # Logged in: route by role
+    if user_type == "admin":
+        return redirect(url_for("admin_dashboard"))
+    elif user_type == "lecturer":
+        return redirect(url_for("lecturer_dashboard"))
     else:
-        return redirect(url_for('student_dashboard'))
+        # default to student if missing/unknown
+        return redirect(url_for("student_dashboard"))
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -1688,6 +1695,7 @@ def initialize_database():
             print(f"❌ Error initializing database: {e}")
             import traceback
             traceback.print_exc()
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
