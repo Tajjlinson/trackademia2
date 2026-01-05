@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 
 
 app = Flask(__name__)
-app.secret_key = secrets.token_hex(16)
+app.secret_key = os.environ.get("SECRET_KEY_VALUE", secrets.token_hex(16))
 CORS(app)
 
 # Database configuration
@@ -1648,9 +1648,6 @@ def start_notification_checker():
 def health():
     return "ok", 200
 
-@app.before_serving
-def startup_tasks():
-    initialize_database()
 
 # Add startup probe endpoint
 @app.route('/startup')
