@@ -33,6 +33,24 @@ enrollments = db.Table('enrollments',
     db.Column('course_id', db.Integer, db.ForeignKey('courses.id'))
 )
 
+class InstitutionSignupRequest(db.Model):
+    __tablename__ = 'institution_signup_requests'
+
+    id = db.Column(db.Integer, primary_key=True)
+    institution_name = db.Column(db.String(200), nullable=False)
+    contact_name = db.Column(db.String(120), nullable=False)
+    contact_email = db.Column(db.String(200), nullable=False)
+    country = db.Column(db.String(80), nullable=True)
+    estimated_students = db.Column(db.Integer, nullable=True)
+    estimated_lecturers = db.Column(db.Integer, nullable=True)
+    message = db.Column(db.Text, nullable=True)
+    status = db.Column(db.String(20), default='pending')  # pending, contacted, approved, rejected
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<InstitutionSignupRequest {self.institution_name} ({self.status})>"
+
+
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)

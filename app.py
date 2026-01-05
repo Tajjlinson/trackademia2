@@ -44,7 +44,7 @@ db.init_app(app)
 # Authentication middleware
 @app.before_request
 def require_login():
-    allowed_routes = ['login', 'static', 'health']
+    allowed_routes = ['login', 'static', 'health', 'institution_signup']
     if request.endpoint not in allowed_routes and 'user_id' not in flask_session:
         return redirect(url_for('login'))
 
@@ -147,6 +147,52 @@ def admin_dashboard():
                          pending_requests=pending_requests,
                          recent_users=recent_users,
                          recent_courses=recent_courses)
+
+@app.route('/institution-signup', methods=['GET', 'POST'])
+def institution_signup():
+    if request.method == 'POST':
+        institution_name = request.form.get('institution_name', '').strip()
+        contact_name = request.form.get('contact_name', '').strip()
+        contact_email = request.form.get('contact_email', '').strip()
+        country = request.form.get('country', '').strip() or None
+
+        # Optional numbers
+        est_students = request.form.get('estimated_students')
+        est_lecturers = request.form.get('estimated_lecturers')
+
+        message = request.form.get('message', '').strip() or None
+
+        if not institution_name or not contact_name or not contact_email:
+            return render_template('institution_signup.html', error='Please fill in Institution Name, Contact Person, and Contact Email.')
+
+        # Convert optional ints safely
+        try:
+            est_students = int(est_students) if est_students else None
+        except ValueError:
+            est_students = None
+
+        try:
+            est_lecturers = int(est_lecturers) if est_lecturers else None
+        except ValueError:
+            est_lecturers = None
+
+        req_obj = InstitutionSignupRequest(
+            institution_name=institution_name,
+            contact_name=contact_name,
+            contact_email=contact_email,
+            country=country,
+            estimated_students=est_students,
+            estimated_lecturers=est_lecturers,
+            message=message,
+            status='pending'
+        )
+        db.session.add(req_obj)
+        db.session.commit()
+
+        return render_template('institution_signup.html', success="Thanks! Your request was submitted. We'll contact you soon.")
+
+    return render_template('institution_signup.html')
+
 
 @app.route('/admin/users')
 def admin_users():

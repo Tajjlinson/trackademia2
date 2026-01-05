@@ -32,12 +32,22 @@
                 <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px;">
                     <i class="fas fa-sign-in-alt"></i> Login
                 </button>
+                <div style="margin-top: 14px; text-align:center;">
+                <a href="{{ url_for('institution_signup') }}" class="btn btn-secondary" style="width: 100%; padding: 12px; display:inline-block; text-decoration:none;">
+                    <i class="fas fa-school"></i> Institution Sign Up
+                </a>
+                <p style="margin-top:10px; font-size:0.85rem; color:#64748b;">
+                    For schools & educational institutions who want to onboard Trackademia.
+                </p>
+                </div>
+
             </form>
             
             <div style="margin-top: 20px; text-align: center; color: #64748b; font-size: 0.9rem;">
                 <p><strong>Demo Credentials:</strong></p>
                 <p>Lecturer: username=lecturer, password=password123</p>
                 <p>Student: username=student, password=password123</p>
+                <p>Admin: username = Admin, password=admin123</p>
             </div>
         </div>
     </div>
