@@ -10,7 +10,6 @@ import threading
 import time
 import os
 from urllib.parse import urlparse
-import psycopg2
 
 
 app = Flask(__name__)
