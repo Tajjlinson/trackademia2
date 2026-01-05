@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trackademia | Institution Sign Up</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+  <div class="auth-wrap">
+    <div class="auth-shell">
+
+      <!-- Left: Brand -->
+      <section class="brand-panel">
+        <div class="brand-badge">
+          <i class="fa-solid fa-school"></i>
+          Trackademia • Institution Onboarding
+        </div>
+
+        <h1 class="brand-title">Bring Trackademia to your school.</h1>
+        <p class="brand-sub">
+          Submit a request and we’ll set up your institution workspace, admin access,
+          and onboarding plan (CSV import, invite links, or integration).
+        </p>
+
+        <ul class="feature-list">
+          <li class="feature"><span class="dot"></span><div><b>Fast setup</b> for pilot programs and demos.</div></li>
+          <li class="feature"><span class="dot"></span><div><b>Scales</b> from small schools to universities.</div></li>
+          <li class="feature"><span class="dot"></span><div><b>Data integrity</b> with audit-friendly attendance records.</div></li>
+        </ul>
+
+        <div style="margin-top:18px;">
+          <a class="btn btn-ghost" href="{{ url_for('login') }}">
+            <i class="fa-solid fa-arrow-left"></i> Back to Login
+          </a>
+        </div>
+      </section>
+
+      <!-- Right: Signup form -->
+      <section class="auth-card">
+        <h2 class="card-title">Institution request</h2>
+        <p class="card-sub">Tell us a little about your organization and we’ll reach out.</p>
+
+        {% if error %}
+          <div class="alert error">{{ error }}</div>
+        {% endif %}
+        {% if success %}
+          <div class="alert success">{{ success }}</div>
+        {% endif %}
+
+        <form class="form" method="POST" action="{{ url_for('institution_signup') }}">
+          <div class="field">
+            <label class="label" for="institution_name">Institution Name</label>
+            <input class="input" type="text" id="institution_name" name="institution_name" required placeholder="e.g., UWI Mona / Kingston High" />
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label class="label" for="contact_name">Contact Person</label>
+              <input class="input" type="text" id="contact_name" name="contact_name" required placeholder="Full name" />
+            </div>
+            <div class="field">
+              <label class="label" for="country">Country</label>
+              <input class="input" type="text" id="country" name="country" placeholder="e.g., Jamaica" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="label" for="contact_email">Contact Email</label>
+            <input class="input" type="email" id="contact_email" name="contact_email" required placeholder="name@school.edu" />
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label class="label" for="estimated_students">Estimated Students</label>
+              <input class="input" type="number" id="estimated_students" name="estimated_students" min="0" placeholder="e.g., 1200" />
+            </div>
+            <div class="field">
+              <label class="label" for="estimated_lecturers">Estimated Teachers/Lecturers</label>
+              <input class="input" type="number" id="estimated_lecturers" name="estimated_lecturers" min="0" placeholder="e.g., 85" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="label" for="message">Notes (optional)</label>
+            <textarea class="textarea" id="message" name="message" rows="4"
+              placeholder="What are you hoping to solve? (attendance fraud, reporting, compliance, etc.)"></textarea>
+          </div>
+
+          <button class="btn btn-primary" type="submit">
+            <i class="fa-solid fa-paper-plane"></i> Submit Request
+          </button>
+
+          <p class="mini-note">
+            This creates a request in your system (pending) so you can follow up and onboard the institution.
+          </p>
+        </form>
+      </section>
+
+    </div>
+  </div>
+</body>
+</html>

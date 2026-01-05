@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, jsonify, session as flask_session, redirect, url_for, flash, send_file
 from flask_cors import CORS
 from datetime import datetime, timedelta
-from database import db, Notification, User, Admin, Lecturer, Student, Course, Session as SessionModel, Attendance, RemovalRequest
+from database import InstitutionSignupRequest, db, Notification, User, Admin, Lecturer, Student, Course, Session as SessionModel, Attendance, RemovalRequest
 import secrets
 import ipaddress
 import io

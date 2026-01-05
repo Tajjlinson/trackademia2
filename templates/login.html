@@ -1,55 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trackademia - Login</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trackademia | Login</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-box">
-            <h1><i class="fas fa-graduation-cap"></i> Trackademia</h1>
-            
-            {% if error %}
-                <div style="background-color: #fee2e2; color: #dc2626; padding: 10px; border-radius: 8px; margin-bottom: 20px;">
-                    {{ error }}
-                </div>
-            {% endif %}
-            
-            <form method="POST" action="{{ url_for('login') }}">
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required placeholder="Enter your username">
-                </div>
-                
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required placeholder="Enter your password">
-                </div>
-                
-                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px;">
-                    <i class="fas fa-sign-in-alt"></i> Login
-                </button>
-                <div style="margin-top: 14px; text-align:center;">
-                <a href="{{ url_for('institution_signup') }}" class="btn btn-secondary" style="width: 100%; padding: 12px; display:inline-block; text-decoration:none;">
-                    <i class="fas fa-school"></i> Institution Sign Up
-                </a>
-                <p style="margin-top:10px; font-size:0.85rem; color:#64748b;">
-                    For schools & educational institutions who want to onboard Trackademia.
-                </p>
-                </div>
+  <div class="auth-wrap">
+    <div class="auth-shell">
 
-            </form>
-            
-            <div style="margin-top: 20px; text-align: center; color: #64748b; font-size: 0.9rem;">
-                <p><strong>Demo Credentials:</strong></p>
-                <p>Lecturer: username=lecturer, password=password123</p>
-                <p>Student: username=student, password=password123</p>
-                <p>Admin: username = Admin, password=admin123</p>
-            </div>
+      <!-- Left: Brand / Value prop -->
+      <section class="brand-panel">
+        <div class="brand-badge">
+          <i class="fa-solid fa-location-dot"></i>
+          Trackademia • Smart Attendance
         </div>
+
+        <h1 class="brand-title">Secure attendance that’s hard to fake.</h1>
+        <p class="brand-sub">
+          Trackademia verifies attendance using session control and location checks so schools
+          can trust the data—without making students hate the process.
+        </p>
+
+        <ul class="feature-list">
+          <li class="feature"><span class="dot"></span><div><b>Session-based</b> attendance windows controlled by lecturers.</div></li>
+          <li class="feature"><span class="dot"></span><div><b>Location validation</b> to reduce “I was there” fraud.</div></li>
+          <li class="feature"><span class="dot"></span><div><b>Role dashboards</b> for Admin, Lecturer, and Student.</div></li>
+        </ul>
+
+        <div style="margin-top:18px;">
+          <span class="pill"><i class="fa-solid fa-shield-halved"></i> Production-ready deploy on Render</span>
+        </div>
+      </section>
+
+      <!-- Right: Login card -->
+      <section class="auth-card">
+        <h2 class="card-title">Welcome back</h2>
+        <p class="card-sub">Log in to continue to your dashboard.</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, msg in messages %}
+              <div class="alert {{ 'error' if category == 'error' else 'success' }}">
+                {{ msg }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form class="form" method="POST" action="{{ url_for('login') }}">
+          <div class="field">
+            <label class="label" for="username">Username</label>
+            <input class="input" type="text" id="username" name="username" required placeholder="e.g. student_demo">
+          </div>
+
+          <div class="field">
+            <label class="label" for="password">Password</label>
+            <input class="input" type="password" id="password" name="password" required placeholder="••••••••">
+          </div>
+
+          <button class="btn btn-primary" type="submit">
+            <i class="fa-solid fa-right-to-bracket"></i> Login
+          </button>
+
+          <div class="divider">or</div>
+
+          <a class="btn btn-ghost" href="{{ url_for('institution_signup') }}">
+            <i class="fa-solid fa-school"></i> Institution Sign Up
+          </a>
+
+          <p class="mini-note">
+            Students and lecturers usually don’t self-register—your school admin invites or imports users.
+            Institutions can request onboarding via the button above.
+          </p>
+
+          <!-- Optional: Demo credentials block (keep if you want) -->
+          <div class="mini-note" style="margin-top:8px;">
+            <b>Demo logins:</b><br>
+            admin_demo / password<br>
+            lecturer_demo / password<br>
+            student_demo / password
+          </div>
+        </form>
+
+      </section>
     </div>
+  </div>
 </body>
 </html>

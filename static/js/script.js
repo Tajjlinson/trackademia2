@@ -169,3 +169,23 @@ function renderAttendanceChart(analyticsData) {
         }
     });
 }
+
+// Mobile sidebar drawer
+document.addEventListener("DOMContentLoaded", () => {
+  const toggle = document.querySelector(".sidebar-toggle");
+  const overlay = document.querySelector(".sidebar-overlay");
+
+  const open = () => document.body.classList.add("sidebar-open");
+  const close = () => document.body.classList.remove("sidebar-open");
+
+  if (toggle) toggle.addEventListener("click", () => {
+    document.body.classList.contains("sidebar-open") ? close() : open();
+  });
+
+  if (overlay) overlay.addEventListener("click", close);
+
+  // Close drawer when resizing up to desktop
+  window.addEventListener("resize", () => {
+    if (window.innerWidth >= 769) close();
+  });
+});
