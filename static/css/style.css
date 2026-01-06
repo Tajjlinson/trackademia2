@@ -974,3 +974,27 @@ html, body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ✅ Critical: allow grid/flex children to shrink (prevents overflow at ~566px) */
+.dashboard-grid,
+.dashboard-card,
+.table-scroll,
+.dashboard-card .table-responsive {
+  min-width: 0;
+}
+
+/* ✅ Prevent the table from "leaking" horizontally outside the card */
+.dashboard-card {
+  overflow: hidden;
+}
+
+/* ✅ table-scroll should not allow horizontal overflow to escape */
+.table-scroll {
+  overflow-x: hidden;   /* keep your overflow-y: auto behavior */
+}
+
+/* ✅ this is the ONLY place horizontal scrolling should happen */
+.dashboard-card .table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
