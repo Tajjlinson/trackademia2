@@ -176,6 +176,37 @@ tr:hover {
     background-color: #f8fafc;
 }
 
+/* ---------- Universal responsive tables ---------- */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent columns from getting crushed */
+.table-responsive table {
+  min-width: 760px; /* tweak if needed */
+}
+
+/* Improve wrapping for long text */
+.table td, .table th {
+  vertical-align: middle;
+  word-break: break-word;
+}
+
+/* Make action buttons behave better on mobile */
+.table .btn-group-vertical,
+.table .action-buttons {
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .table-responsive table {
+    min-width: 900px; /* a bit wider so horizontal scroll feels natural */
+  }
+}
+
+
 /* Buttons */
 .btn {
     padding: 10px 20px;

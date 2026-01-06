@@ -30,7 +30,7 @@
                         </div>
                         
                         <div class="col-md-9">
-                            <div class="table-responsive">
+                            <div class="table-responsive profile-table-wrap">
                                 <table class="table table-borderless">
                                     <tr>
                                         <th width="30%">Full Name:</th>
@@ -218,5 +218,14 @@
 .card-header.bg-primary {
     background-color: #4e73df !important;
 }
+
+/* Profile table should wrap naturally */
+.profile-table-wrap table {
+  min-width: 0 !important;
+}
+.profile-table-wrap th {
+  white-space: nowrap;
+}
+
 </style>
 {% endblock %}

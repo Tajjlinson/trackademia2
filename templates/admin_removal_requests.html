@@ -341,5 +341,14 @@ document.addEventListener('DOMContentLoaded', () => {
     .btn-group-vertical .btn { margin-bottom: 0; min-width: auto; }
     .reason-text { max-width: 150px; }
 }
+
+/* Let reason wrap better, keep actions stable */
+#pendingRequestsTable td:nth-child(5) {
+  min-width: 240px;
+}
+#pendingRequestsTable td:last-child {
+  white-space: nowrap;
+}
+
 </style>
 {% endblock %}
