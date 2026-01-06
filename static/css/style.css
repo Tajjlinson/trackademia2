@@ -685,6 +685,36 @@ tr:hover {
     min-width: 700px; /* prevents squishing; adjust if needed */
 }
 
+/* ===============================
+   Dashboard layout centering
+   =============================== */
+
+/* Main content spacing from sidebar */
+.main-content {
+    padding: 32px;
+}
+
+/* Inner content container */
+.dashboard-container {
+    max-width: 1200px;   /* controls line length */
+    margin: 0 auto;      /* centers content */
+    width: 100%;
+}
+
+/* Slightly wider on large screens */
+@media (min-width: 1400px) {
+    .dashboard-container {
+        max-width: 1320px;
+    }
+}
+
+/* Mobile polish */
+@media (max-width: 768px) {
+    .main-content {
+        padding: 16px;
+    }
+}
+
 @media (max-width: 520px) {
   .card { padding: 16px; }
   .table-container { padding: 16px; }
