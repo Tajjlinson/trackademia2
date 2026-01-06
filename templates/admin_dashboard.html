@@ -60,82 +60,126 @@
         <p>Pending Requests</p>
       </div>
     </div>
-
-    <!-- ✅ Equal-height tables section -->
-    <div class="dashboard-grid">
-      
-      <!-- Recent Users -->
-      <div class="dashboard-card">
-        <div class="dashboard-card-header">
-          <h2>Recent Users</h2>
-        </div>
-
-        <div class="table-scroll">
-          <div class="table-responsive">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Username</th>
-                  <th>Type</th>
-                  <th>Created</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for user in recent_users %}
-                <tr>
-                  <td>{{ user.name }}</td>
-                  <td>{{ user.username }}</td>
-                  <td>
-                    <span class="badge badge-{{ 'primary' if user.user_type == 'admin' else 'success' if user.user_type == 'lecturer' else 'info' }}">
-                      {{ user.user_type|title }}
-                    </span>
-                  </td>
-                  <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="dashboard-card-footer">
-          <a href="{{ url_for('admin_users') }}" class="btn btn-primary">View All Users</a>
-        </div>
+  <!-- ✅ Today / This Week Summary -->
+  <div class="dashboard-card activity-summary-card">
+    <div class="dashboard-card-header">
+      <h2>Today / This Week</h2>
     </div>
-    
-    <div class="col-md-6">
-        <div class="table-container">
-            <h2>Recent Courses</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>Code</th>
-                  <th>Name</th>
-                  <th>Lecturer</th>
-                  <th>Students</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for course in recent_courses %}
-                <tr>
-                  <td>{{ course.code }}</td>
-                  <td>{{ course.name }}</td>
-                  <td>{{ course.lecturer.user.name }}</td>
-                  <td>{{ course.students|length }}/{{ course.max_capacity }}</td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
 
-        <div class="dashboard-card-footer">
-          <a href="{{ url_for('admin_courses') }}" class="btn btn-primary">View All Courses</a>
-        </div>
+    <div class="activity-summary-grid">
+      <div class="activity-metric">
+        <div class="label">Attendance sessions today</div>
+        <div class="value">{{ sessions_today }}</div>
       </div>
 
+      <div class="activity-metric">
+        <div class="label">Total attendance check-ins today</div>
+        <div class="value">{{ checkins_today }}</div>
+      </div>
+
+      <div class="activity-metric">
+        <div class="label">Late check-ins today</div>
+        <div class="value">{{ late_checkins_today }}</div>
+      </div>
+
+      <div class="activity-metric">
+        <div class="label">Failed verifications today</div>
+        <div class="value">{{ failed_verifications_today }}</div>
+      </div>
+
+      <div class="activity-metric">
+        <div class="label">New users (last 7 days)</div>
+        <div class="value">{{ new_users_week }}</div>
+      </div>
+
+      <div class="activity-metric">
+        <div class="label">Courses created (last 7 days)</div>
+        <div class="value">{{ courses_created_week }}</div>
+      </div>
     </div>
+  </div>
+
+
+    <!-- ✅ Equal-height tables section -->
+<div class="dashboard-grid">
+
+  <!-- Recent Users -->
+  <div class="dashboard-card">
+    <div class="dashboard-card-header">
+      <h2>Recent Users</h2>
+    </div>
+
+    <div class="table-scroll">
+      <div class="table-responsive">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Username</th>
+              <th>Type</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in recent_users %}
+            <tr>
+              <td>{{ user.name }}</td>
+              <td>{{ user.username }}</td>
+              <td>
+                <span class="badge badge-{{ 'primary' if user.user_type == 'admin' else 'success' if user.user_type == 'lecturer' else 'info' }}">
+                  {{ user.user_type|title }}
+                </span>
+              </td>
+              <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="dashboard-card-footer">
+      <a href="{{ url_for('admin_users') }}" class="btn btn-primary">View All Users</a>
+    </div>
+  </div>
+
+  <!-- Recent Courses -->
+  <div class="dashboard-card">
+    <div class="dashboard-card-header">
+      <h2>Recent Courses</h2>
+    </div>
+
+    <div class="table-scroll">
+      <div class="table-responsive">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Name</th>
+              <th>Lecturer</th>
+              <th>Students</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for course in recent_courses %}
+            <tr>
+              <td>{{ course.code }}</td>
+              <td>{{ course.name }}</td>
+              <td>{{ course.lecturer.user.name }}</td>
+              <td>{{ course.students|length }}/{{ course.max_capacity }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="dashboard-card-footer">
+      <a href="{{ url_for('admin_courses') }}" class="btn btn-primary">View All Courses</a>
+    </div>
+  </div>
+
+</div>
 
     <!-- ✅ Put profile card inside a proper row so spacing/layout behaves -->
     <div class="row mt-4">

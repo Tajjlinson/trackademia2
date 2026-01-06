@@ -118,35 +118,64 @@ def logout():
     return redirect(url_for('login'))
 
 # Admin Routes
+# app.py
+from datetime import datetime, timedelta  # (make sure these are imported)
+
 @app.route('/admin/dashboard')
 def admin_dashboard():
     if flask_session.get('user_type') != 'admin':
         flash('Access denied. Admin privileges required.', 'error')
         return redirect(url_for('login'))
-    
+
     # Get statistics
     total_users = db.session.query(User).count()
     total_students = db.session.query(Student).count()
     total_lecturers = db.session.query(Lecturer).count()
     total_courses = db.session.query(Course).count()
     total_sessions = db.session.query(SessionModel).count()
-    
-    # Get pending removal requests
+
     pending_requests = db.session.query(RemovalRequest).filter_by(status='pending').count()
-    
-    # Get recent activities
+
     recent_users = db.session.query(User).order_by(User.created_at.desc()).limit(5).all()
     recent_courses = db.session.query(Course).order_by(Course.created_at.desc()).limit(5).all()
-    
-    return render_template('admin_dashboard.html',
-                         total_users=total_users,
-                         total_students=total_students,
-                         total_lecturers=total_lecturers,
-                         total_courses=total_courses,
-                         total_sessions=total_sessions,
-                         pending_requests=pending_requests,
-                         recent_users=recent_users,
-                         recent_courses=recent_courses)
+
+    # ✅ Today / This Week summary
+    now = datetime.now()
+    today = now.date()
+    start_of_today = datetime.combine(today, datetime.min.time())
+    week_start = now - timedelta(days=7)
+
+    sessions_today = db.session.query(SessionModel).filter(SessionModel.date == today).count()
+    checkins_today = db.session.query(Attendance).filter(Attendance.timestamp >= start_of_today).count()
+
+    new_users_week = db.session.query(User).filter(User.created_at >= week_start).count()
+    courses_created_week = db.session.query(Course).filter(Course.created_at >= week_start).count()
+
+    # NOTE: Your DB currently doesn't store "late" or "failed verification" explicitly,
+    # so we'll show 0 for now until you add tracking.
+    late_checkins_today = 0
+    failed_verifications_today = 0
+
+    return render_template(
+        'admin_dashboard.html',
+        total_users=total_users,
+        total_students=total_students,
+        total_lecturers=total_lecturers,
+        total_courses=total_courses,
+        total_sessions=total_sessions,
+        pending_requests=pending_requests,
+        recent_users=recent_users,
+        recent_courses=recent_courses,
+
+        # ✅ new summary vars
+        sessions_today=sessions_today,
+        checkins_today=checkins_today,
+        late_checkins_today=late_checkins_today,
+        failed_verifications_today=failed_verifications_today,
+        new_users_week=new_users_week,
+        courses_created_week=courses_created_week
+    )
+
 
 @app.route('/institution-signup', methods=['GET', 'POST'])
 def institution_signup():

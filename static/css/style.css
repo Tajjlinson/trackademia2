@@ -814,4 +814,163 @@ tr:hover {
   .btn { width: 100%; }
 }
 
+/* ===============================
+   Dashboard table width fixes
+   =============================== */
 
+/* Make table behave nicely on desktop (no forced extra width) */
+.dashboard-card .table-responsive table {
+  min-width: 0 !important;          /* overrides the global 760/900 rules */
+  width: 100% !important;
+  table-layout: fixed;               /* prevents columns from blowing out */
+}
+
+/* Prevent long text from stretching the card */
+.dashboard-card th,
+.dashboard-card td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Let Name/Title columns wrap on small screens if you prefer */
+@media (max-width: 768px) {
+  .dashboard-card th:nth-child(2),
+  .dashboard-card td:nth-child(2) {
+    white-space: normal;
+  }
+
+  /* On mobile, allow horizontal scroll instead of breaking layout */
+  .dashboard-card .table-responsive table {
+    min-width: 720px !important;
+    table-layout: auto;
+  }
+}
+
+/* Footer button always "attached" and aligned */
+.dashboard-card-footer {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ===============================
+   Quick actions centering
+   =============================== */
+
+.quick-actions {
+  text-align: center;
+}
+
+.quick-actions .action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* Optional: keep buttons consistent width on small phones */
+@media (max-width: 520px) {
+  .quick-actions .action-buttons .btn {
+    width: 100%;
+    max-width: 420px;
+  }
+}
+
+/* ✅ Global: stop "page zoom out" caused by horizontal overflow */
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* ✅ Make sure everything uses predictable sizing */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* ✅ Prevent dashboard wrappers from exceeding viewport */
+.main-content,
+.dashboard-container,
+.dashboard-grid,
+.dashboard-card {
+  max-width: 100%;
+}
+
+/* ✅ The key fix: table wrapper must scroll horizontally on mobile */
+.dashboard-card .table-responsive {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ✅ Prevent the TABLE itself from forcing the layout wider */
+.dashboard-card .table-responsive table {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0 !important;
+  border-collapse: collapse;
+}
+
+/* ✅ On small screens, allow the table to be wider than the card
+      but ONLY inside the scroll container (prevents page zoom-out) */
+@media (max-width: 768px) {
+  .dashboard-card .table-responsive table {
+    width: max-content;     /* table can be wider */
+    min-width: 720px;       /* adjust if you want less scroll */
+  }
+}
+
+/* ================================
+   Admin Dashboard: Activity Summary
+================================== */
+.activity-summary-card {
+  margin-top: 20px;
+}
+
+.activity-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+
+.activity-metric {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  min-width: 0; /* prevents overflow */
+}
+
+.activity-metric .label {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.activity-metric .value {
+  margin-top: 6px;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .activity-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 576px) {
+  .activity-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
