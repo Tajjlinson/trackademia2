@@ -724,6 +724,45 @@ tr:hover {
     width: 100%;
 }
 
+/* =========================
+   Equal-height dashboard tables
+   ========================= */
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    align-items: stretch;
+}
+
+/* Each card same height */
+.dashboard-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Table area scrolls instead of stretching card */
+.table-scroll {
+    flex: 1;
+    overflow-y: auto;
+    margin-top: 12px;
+}
+
+/* Optional: limit max table height */
+.table-scroll {
+    max-height: 320px;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
 /* Slightly wider on large screens */
 @media (min-width: 1400px) {
     .dashboard-container {
