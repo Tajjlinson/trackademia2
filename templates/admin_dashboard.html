@@ -3,6 +3,8 @@
 {% block title %}Admin Dashboard{% endblock %}
 
 {% block content %}
+<div class="main-content">
+    <div class="dashboard-container">
 <div class="dashboard-header">
     <h1>Admin Dashboard</h1>
     <p>Welcome, {{ session.name }} - System Administration</p>
@@ -143,7 +145,8 @@
         </div>
     </div>
 </div>
-
+    </div>
+</div>
 <div class="quick-actions mt-4">
     <h2>Quick Actions</h2>
     <div class="action-buttons">
