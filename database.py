@@ -259,6 +259,22 @@ def create_demo_data():
     print("Creating demo data...")
     
     try:
+        #Create Super_admin User
+        super_user = User()
+        super_user.username = 'superadmin'
+        super_user.name = 'Platform Super Admin'
+        super_user.email = 'superadmin@trackademia.edu'
+        super_user.user_type = 'super_admin'
+        super_user.set_password('superadmin123')
+        db.session.add(super_user)
+        db.session.commit()
+
+        super_profile = Admin()
+        super_profile.user_id = super_user.id
+        super_profile.role = 'super_admin'
+        db.session.add(super_profile)
+        db.session.commit()
+
         # Create admin user
         admin_user = User()
         admin_user.username = 'admin'

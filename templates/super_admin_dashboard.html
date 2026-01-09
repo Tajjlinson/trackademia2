@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="main-content">
+  <div class="dashboard-container">
+
+    <div class="dashboard-header">
+      <h1>Admin Dashboard</h1>
+      <p>Welcome, {{ session.name }} - System Administration</p>
+    </div>
+
+    <div class="dashboard-cards">
+      <div class="card">
+        <div class="card-icon bg-primary">
+          <i class="fas fa-users"></i>
+        </div>
+        <h3>{{ total_users }}</h3>
+        <p>Total Users</p>
+      </div>
+
+      <div class="card">
+        <div class="card-icon bg-success">
+          <i class="fas fa-graduation-cap"></i>
+        </div>
+        <h3>{{ total_students }}</h3>
+        <p>Students</p>
+      </div>
+
+      <div class="card">
+        <div class="card-icon bg-warning">
+          <i class="fas fa-chalkboard-teacher"></i>
+        </div>
+        <h3>{{ total_lecturers }}</h3>
+        <p>Lecturers</p>
+      </div>
+
+      <div class="card">
+        <div class="card-icon bg-danger">
+          <i class="fas fa-book"></i>
+        </div>
+        <h3>{{ total_courses }}</h3>
+        <p>Courses</p>
+      </div>
+
+      <div class="card">
+        <div class="card-icon bg-info">
+          <i class="fas fa-calendar-alt"></i>
+        </div>
+        <h3>{{ total_sessions }}</h3>
+        <p>Sessions</p>
+      </div>
+
+      <div class="card">
+        <div class="card-icon bg-secondary">
+          <i class="fas fa-exclamation-circle"></i>
+        </div>
+        <h3>{{ pending_requests }}</h3>
+        <p>Pending Requests</p>
+      </div>
+    </div>
+
+    <div class="dashboard-card">
+  <div class="dashboard-card-header">
+    <h2>Pending Institution Signup Requests</h2>
+  </div>
+
+  <div class="table-scroll">
+    <div class="table-responsive">
+      <table class="dash-table">
+        <thead>
+          <tr>
+            <th>Institution</th>
+            <th>Contact</th>
+            <th>Email</th>
+            <th>Country</th>
+            <th>Submitted</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in pending_institution_requests %}
+          <tr>
+            <td>{{ r.institution_name }}</td>
+            <td>{{ r.contact_name }}</td>
+            <td>{{ r.contact_email }}</td>
+            <td>{{ r.country or '-' }}</td>
+            <td>{{ r.created_at.strftime('%Y-%m-%d') }}</td>
+          </tr>
+          {% endfor %}
+          {% if pending_institution_requests|length == 0 %}
+          <tr>
+            <td colspan="5" style="text-align:center; padding: 14px;">No pending requests 🎉</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+  <!-- ✅ Today / This Week Summary -->
+  <div class="dashboard-card activity-summary-card">
+    <div class="dashboard-card-header">
+      <h2>Today / This Week</h2>
+    </div>
+
+    <div class="activity-summary-grid">
+      <div class="activity-metric">
+        <div class="label">Attendance sessions today</div>
+        <div class="value">{{ sessions_today }}</div>
+      </div>
+
+      <div class="activity-metric">
+        <div class="label">Total attendance check-ins today</div>
+        <div class="value">{{ checkins_today }}</div>
+      </div>
+
+      <div class="activity-metric">
+        <div class="label">Late check-ins today</div>
+        <div class="value">{{ late_checkins_today }}</div>
+      </div>
+
+      <div class="activity-metric">
+        <div class="label">Failed verifications today</div>
+        <div class="value">{{ failed_verifications_today }}</div>
+      </div>
+
+      <div class="activity-metric">
+        <div class="label">New users (last 7 days)</div>
+        <div class="value">{{ new_users_week }}</div>
+      </div>
+
+      <div class="activity-metric">
+        <div class="label">Courses created (last 7 days)</div>
+        <div class="value">{{ courses_created_week }}</div>
+      </div>
+    </div>
+  </div>
+
+
+    <!-- ✅ Equal-height tables section -->
+<div class="dashboard-grid">
+
+  <!-- Recent Users -->
+  <div class="dashboard-card">
+    <div class="dashboard-card-header">
+      <h2>Recent Users</h2>
+    </div>
+
+    <div class="table-scroll">
+      <div class="table-responsive">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Username</th>
+              <th>Type</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in recent_users %}
+            <tr>
+              <td>{{ user.name }}</td>
+              <td>{{ user.username }}</td>
+              <td>
+                <span class="badge badge-{{ 'primary' if user.user_type == 'admin' else 'success' if user.user_type == 'lecturer' else 'info' }}">
+                  {{ user.user_type|title }}
+                </span>
+              </td>
+              <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="dashboard-card-footer">
+      <a href="{{ url_for('admin_users') }}" class="btn btn-primary">View All Users</a>
+    </div>
+  </div>
+
+  <!-- Recent Courses -->
+  <div class="dashboard-card">
+    <div class="dashboard-card-header">
+      <h2>Recent Courses</h2>
+    </div>
+
+    <div class="table-scroll">
+      <div class="table-responsive">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Name</th>
+              <th>Lecturer</th>
+              <th>Students</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for course in recent_courses %}
+            <tr>
+              <td>{{ course.code }}</td>
+              <td>{{ course.name }}</td>
+              <td>{{ course.lecturer.user.name }}</td>
+              <td>{{ course.students|length }}/{{ course.max_capacity }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="dashboard-card-footer">
+      <a href="{{ url_for('admin_courses') }}" class="btn btn-primary">View All Courses</a>
+    </div>
+  </div>
+
+</div>
+
+    <!-- ✅ Put profile card inside a proper row so spacing/layout behaves -->
+    <div class="row mt-4">
+      <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+          <div class="card-body">
+            <div class="row no-gutters align-items-center">
+              <div class="col mr-2">
+                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                  My Profile
+                </div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">
+                  {{ name }}
+                </div>
+                <div class="mt-2 mb-0 text-muted text-xs">
+                  <a href="{{ url_for('admin_profile') }}" class="text-primary">
+                    View Profile <i class="fas fa-arrow-right ml-1"></i>
+                  </a>
+                </div>
+              </div>
+              <div class="col-auto">
+                <i class="fas fa-user-shield fa-2x text-gray-300"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions mt-4">
+      <h2>Quick Actions</h2>
+      <div class="action-buttons">
+        <a href="{{ url_for('admin_create_user') }}" class="btn btn-success">
+          <i class="fas fa-user-plus"></i> Add New User
+        </a>
+        <a href="{{ url_for('admin_create_course') }}" class="btn btn-success">
+          <i class="fas fa-book-medical"></i> Create Course
+        </a>
+        <a href="{{ url_for('admin_import_users') }}" class="btn btn-info">
+          <i class="fas fa-file-import"></i> Import Users
+        </a>
+        <a href="{{ url_for('admin_removal_requests') }}" class="btn btn-warning">
+          <i class="fas fa-clipboard-list"></i> Review Requests
+        </a>
+        <a href="{{ url_for('admin_reports') }}" class="btn btn-primary">
+          <i class="fas fa-chart-bar"></i> View Reports
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

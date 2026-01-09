@@ -73,12 +73,15 @@ def index():
     if not user_id:
         return render_template("login.html"), 200
 
-    if user_type == "admin":
+    if user_type == "super_admin":
+        return redirect(url_for("super_admin_dashboard"))
+    elif user_type == "admin":
         return redirect(url_for("admin_dashboard"))
     elif user_type == "lecturer":
         return redirect(url_for("lecturer_dashboard"))
     else:
         return redirect(url_for("student_dashboard"))
+
 
 
 
@@ -99,7 +102,9 @@ def login():
             flask_session['user_type'] = user.user_type
             flask_session['name'] = user.name
             
-            if user.user_type == 'admin':
+            if user.user_type == 'super_admin':
+                return redirect(url_for('super_admin_dashboard'))
+            elif user.user_type == 'admin':
                 return redirect(url_for('admin_dashboard'))
             elif user.user_type == 'lecturer':
                 return redirect(url_for('lecturer_dashboard'))
@@ -118,14 +123,50 @@ def logout():
     return redirect(url_for('login'))
 
 # Admin Routes
-# app.py
-from datetime import datetime, timedelta  # (make sure these are imported)
+
+@app.route('/super-admin/dashboard')
+def super_admin_dashboard():
+    if flask_session.get('user_type') != 'super_admin':
+        flash('Access denied. Super Admin privileges required.', 'error')
+        return redirect(url_for('login'))
+
+    # Global statistics (platform-wide)
+    total_users = db.session.query(User).count()
+    total_students = db.session.query(Student).count()
+    total_lecturers = db.session.query(Lecturer).count()
+    total_courses = db.session.query(Course).count()
+    total_sessions = db.session.query(SessionModel).count()
+
+    # Pending institution signup requests (already in your DB)
+    pending_institution_requests = (
+        db.session.query(InstitutionSignupRequest)
+        .filter_by(status='pending')
+        .order_by(InstitutionSignupRequest.created_at.desc())
+        .limit(10)
+        .all()
+    )
+
+    # existing pending removal requests (optional, but useful)
+    pending_removal_requests = db.session.query(RemovalRequest).filter_by(status='pending').count()
+
+    return render_template(
+        'super_admin_dashboard.html',
+        total_users=total_users,
+        total_students=total_students,
+        total_lecturers=total_lecturers,
+        total_courses=total_courses,
+        total_sessions=total_sessions,
+        pending_removal_requests=pending_removal_requests,
+        pending_institution_requests=pending_institution_requests
+    )
+
 
 @app.route('/admin/dashboard')
 def admin_dashboard():
-    if flask_session.get('user_type') != 'admin':
+    if flask_session.get('user_type') not in ['admin', 'super_admin']:
         flash('Access denied. Admin privileges required.', 'error')
         return redirect(url_for('login'))
+
 
     # Get statistics
     total_users = db.session.query(User).count()
@@ -225,9 +266,10 @@ def institution_signup():
 
 @app.route('/admin/users')
 def admin_users():
-    if flask_session.get('user_type') != 'admin':
+    if flask_session.get('user_type') not in ['admin', 'super_admin']:
         flash('Access denied. Admin privileges required.', 'error')
         return redirect(url_for('login'))
+
     
     users = db.session.query(User).order_by(User.user_type, User.name).all()
     return render_template('admin_users.html', users=users)
@@ -281,12 +323,13 @@ def admin_create_user():
                 office_hours=request.form.get('office_hours')
             )
             db.session.add(lecturer)
-        elif user_type == 'admin':
+        elif user_type in ['admin', 'super_admin']:
             admin = Admin(
                 user_id=user.id,
                 role=request.form.get('role', 'administrator')
             )
             db.session.add(admin)
+
         
         db.session.commit()
         flash('User created successfully', 'success')
