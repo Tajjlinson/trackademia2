@@ -1,7 +1,11 @@
-from flask import Flask, render_template, request, jsonify, session as flask_session, redirect, url_for, flash, send_file
+import re
+import string
+from flask import Flask, render_template, request, jsonify, session as flask_session, redirect, url_for, flash, send_file, abort
 from flask_cors import CORS
 from datetime import datetime, timedelta
 from database import InstitutionSignupRequest, db, Notification, User, Admin, Lecturer, Student, Course, Session as SessionModel, Attendance, RemovalRequest
+from werkzeug.security import generate_password_hash
+from sqlalchemy import or_
 import secrets
 import ipaddress
 import io
@@ -10,6 +14,7 @@ import threading
 import time
 import os
 from urllib.parse import urlparse
+
 
 
 app = Flask(__name__)
@@ -124,144 +129,419 @@ def logout():
 
 # Admin Routes
 
-@app.route('/super-admin/dashboard')
+from functools import wraps
+from datetime import datetime, date, timedelta
+
+from flask import render_template, request, redirect, url_for, flash, session
+from database import db, User, Student, Lecturer, Course, Session as ClassSession, Attendance, InstitutionSignupRequest
+
+
+def require_super_admin(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user_id' not in session:
+            flash("Please log in.", "error")
+            return redirect(url_for('login'))
+        if session.get('user_type') != 'super_admin':
+            flash("Unauthorized access.", "error")
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated
+
+
+from math import ceil
+
+from datetime import datetime, timedelta, date, time
+from sqlalchemy import func, and_
+
+from datetime import datetime, timedelta, time as dt_time
+
+@app.route("/super-admin/dashboard")
 def super_admin_dashboard():
-    if flask_session.get('user_type') != 'super_admin':
-        flash('Access denied. Super Admin privileges required.', 'error')
-        return redirect(url_for('login'))
+    if "user_id" not in session or session.get("user_type") != "super_admin":
+        flash("Unauthorized.", "error")
+        return redirect(url_for("login"))
 
-    # Global statistics (platform-wide)
-    total_users = db.session.query(User).count()
-    total_students = db.session.query(Student).count()
-    total_lecturers = db.session.query(Lecturer).count()
-    total_courses = db.session.query(Course).count()
-    total_sessions = db.session.query(SessionModel).count()
+    view = request.args.get("view", "requests")
 
-    # Pending institution signup requests (already in your DB)
-    pending_institution_requests = (
-        db.session.query(InstitutionSignupRequest)
-        .filter_by(status='pending')
-        .order_by(InstitutionSignupRequest.created_at.desc())
-        .limit(10)
-        .all()
-    )
+    # ---------- Top stats ----------
+    total_users = User.query.count()
+    total_students = User.query.filter_by(user_type="student").count()
+    total_lecturers = User.query.filter_by(user_type="lecturer").count()
+    total_courses = Course.query.count()
+    total_sessions = SessionModel.query.count()
+    pending_institution_count = InstitutionSignupRequest.query.filter_by(status="pending").count()
 
-    # existing pending removal requests (optional, but useful)
-    pending_removal_requests = db.session.query(RemovalRequest).filter_by(status='pending').count()
-
-    return render_template(
-        'super_admin_dashboard.html',
-        total_users=total_users,
-        total_students=total_students,
-        total_lecturers=total_lecturers,
-        total_courses=total_courses,
-        total_sessions=total_sessions,
-        pending_removal_requests=pending_removal_requests,
-        pending_institution_requests=pending_institution_requests
-    )
-
-
-@app.route('/admin/dashboard')
-def admin_dashboard():
-    if flask_session.get('user_type') not in ['admin', 'super_admin']:
-        flash('Access denied. Admin privileges required.', 'error')
-        return redirect(url_for('login'))
-
-
-    # Get statistics
-    total_users = db.session.query(User).count()
-    total_students = db.session.query(Student).count()
-    total_lecturers = db.session.query(Lecturer).count()
-    total_courses = db.session.query(Course).count()
-    total_sessions = db.session.query(SessionModel).count()
-
-    pending_requests = db.session.query(RemovalRequest).filter_by(status='pending').count()
-
-    recent_users = db.session.query(User).order_by(User.created_at.desc()).limit(5).all()
-    recent_courses = db.session.query(Course).order_by(Course.created_at.desc()).limit(5).all()
-
-    # ✅ Today / This Week summary
+    # ---------- Today/This Week metrics ----------
     now = datetime.now()
-    today = now.date()
-    start_of_today = datetime.combine(today, datetime.min.time())
-    week_start = now - timedelta(days=7)
+    start_of_today = datetime.combine(now.date(), dt_time.min)
+    start_of_tomorrow = start_of_today + timedelta(days=1)
+    start_of_week = start_of_today - timedelta(days=6)
 
-    sessions_today = db.session.query(SessionModel).filter(SessionModel.date == today).count()
-    checkins_today = db.session.query(Attendance).filter(Attendance.timestamp >= start_of_today).count()
+    # Sessions today (uses Session.date which is a DATE column)
+    sessions_today = SessionModel.query.filter(SessionModel.date == now.date()).count()
 
-    new_users_week = db.session.query(User).filter(User.created_at >= week_start).count()
-    courses_created_week = db.session.query(Course).filter(Course.created_at >= week_start).count()
+    # Attendance check-ins today (uses Attendance.timestamp)
+    checkins_today = Attendance.query.filter(
+        Attendance.timestamp >= start_of_today,
+        Attendance.timestamp < start_of_tomorrow
+    ).count()
 
-    # NOTE: Your DB currently doesn't store "late" or "failed verification" explicitly,
-    # so we'll show 0 for now until you add tracking.
-    late_checkins_today = 0
-    failed_verifications_today = 0
+    # Late check-ins today (simple definition: any attendance marked 'late')
+    # If your Attendance.status uses other values, tweak this.
+    late_checkins_today = Attendance.query.filter(
+        Attendance.timestamp >= start_of_today,
+        Attendance.timestamp < start_of_tomorrow,
+        Attendance.status == "late"
+    ).count()
+
+    # Failed verifications today (simple definition: status == 'failed')
+    failed_verifications_today = Attendance.query.filter(
+        Attendance.timestamp >= start_of_today,
+        Attendance.timestamp < start_of_tomorrow,
+        Attendance.status == "failed"
+    ).count()
+
+    # New users last 7 days
+    new_users_week = User.query.filter(User.created_at >= start_of_week).count()
+
+    # Courses created last 7 days
+    courses_created_week = Course.query.filter(Course.created_at >= start_of_week).count()
+
+    # ---------- Data for views ----------
+    pending_institution_requests = []
+    institutions_filtered = []
+    all_accounts = []
+    countries = []
+
+    # Requests
+    if view == "requests":
+        pending_institution_requests = InstitutionSignupRequest.query.filter_by(status="pending") \
+            .order_by(InstitutionSignupRequest.created_at.desc()).all()
+
+    # Institutions
+    if view == "institutions":
+        inst_status = request.args.get("inst_status", "approved")
+        inst_country = request.args.get("inst_country", "")
+        inst_q = request.args.get("inst_q", "").strip()
+
+        q = InstitutionSignupRequest.query
+
+        if inst_status != "all":
+            q = q.filter(InstitutionSignupRequest.status == inst_status)
+        if inst_country:
+            q = q.filter(InstitutionSignupRequest.country == inst_country)
+        if inst_q:
+            like = f"%{inst_q}%"
+            q = q.filter(
+                (InstitutionSignupRequest.institution_name.ilike(like)) |
+                (InstitutionSignupRequest.contact_email.ilike(like)) |
+                (InstitutionSignupRequest.contact_name.ilike(like))
+            )
+
+        institutions_filtered = q.order_by(InstitutionSignupRequest.created_at.desc()).all()
+        countries = [c[0] for c in db.session.query(InstitutionSignupRequest.country).distinct().all() if c[0]]
+
+    # Accounts
+    if view == "accounts":
+        acc_role = request.args.get("acc_role", "all")
+        acc_status = request.args.get("acc_status", "all")
+        acc_q = request.args.get("acc_q", "").strip()
+
+        q = User.query
+
+        if acc_role != "all":
+            q = q.filter(User.user_type == acc_role)
+        if acc_status == "active":
+            q = q.filter(User.is_active.is_(True))
+        elif acc_status == "disabled":
+            q = q.filter(User.is_active.is_(False))
+
+        if acc_q:
+            like = f"%{acc_q}%"
+            q = q.filter(
+                (User.name.ilike(like)) |
+                (User.username.ilike(like)) |
+                (User.email.ilike(like))
+            )
+
+        all_accounts = q.order_by(User.created_at.desc()).all()
 
     return render_template(
-        'admin_dashboard.html',
+        "super_admin_dashboard.html",
+        view=view,
+
+        # top stats
         total_users=total_users,
         total_students=total_students,
         total_lecturers=total_lecturers,
         total_courses=total_courses,
         total_sessions=total_sessions,
-        pending_requests=pending_requests,
-        recent_users=recent_users,
-        recent_courses=recent_courses,
+        pending_institution_count=pending_institution_count,
 
-        # ✅ new summary vars
+        # metrics
         sessions_today=sessions_today,
         checkins_today=checkins_today,
         late_checkins_today=late_checkins_today,
         failed_verifications_today=failed_verifications_today,
         new_users_week=new_users_week,
-        courses_created_week=courses_created_week
+        courses_created_week=courses_created_week,
+
+        # view data
+        pending_institution_requests=pending_institution_requests,
+        institutions_filtered=institutions_filtered,
+        all_accounts=all_accounts,
+        countries=countries,
+
+        # pass back filter values so template keeps them
+        inst_status=request.args.get("inst_status", "approved"),
+        inst_country=request.args.get("inst_country", ""),
+        inst_q=request.args.get("inst_q", ""),
+        acc_role=request.args.get("acc_role", "all"),
+        acc_status=request.args.get("acc_status", "all"),
+        acc_q=request.args.get("acc_q", ""),
     )
 
 
-@app.route('/institution-signup', methods=['GET', 'POST'])
-def institution_signup():
-    if request.method == 'POST':
-        institution_name = request.form.get('institution_name', '').strip()
-        contact_name = request.form.get('contact_name', '').strip()
-        contact_email = request.form.get('contact_email', '').strip()
-        country = request.form.get('country', '').strip() or None
 
-        # Optional numbers
-        est_students = request.form.get('estimated_students')
-        est_lecturers = request.form.get('estimated_lecturers')
 
-        message = request.form.get('message', '').strip() or None
 
-        if not institution_name or not contact_name or not contact_email:
-            return render_template('institution_signup.html', error='Please fill in Institution Name, Contact Person, and Contact Email.')
+def _make_temp_password(length=12):
+    alphabet = string.ascii_letters + string.digits
+    return "".join(secrets.choice(alphabet) for _ in range(length))
 
-        # Convert optional ints safely
-        try:
-            est_students = int(est_students) if est_students else None
-        except ValueError:
-            est_students = None
+@app.route("/super-admin/institutions/<int:req_id>/approve", methods=["POST"])
+@require_super_admin
+def super_admin_approve_institution(req_id):
+    req = InstitutionSignupRequest.query.get_or_404(req_id)
 
-        try:
-            est_lecturers = int(est_lecturers) if est_lecturers else None
-        except ValueError:
-            est_lecturers = None
+    if req.status != "pending":
+        flash("This request is not pending.", "warning")
+        return redirect(url_for("super_admin_dashboard", view="requests"))
 
-        req_obj = InstitutionSignupRequest(
-            institution_name=institution_name,
-            contact_name=contact_name,
-            contact_email=contact_email,
-            country=country,
-            estimated_students=est_students,
-            estimated_lecturers=est_lecturers,
-            message=message,
-            status='pending'
-        )
-        db.session.add(req_obj)
+    # Safety: ensure username is still free
+    if User.query.filter_by(username=req.requested_admin_username).first():
+        flash("Cannot approve: requested username is already taken.", "error")
+        return redirect(url_for("super_admin_dashboard", view="requests"))
+
+    temp_password = _make_temp_password()
+
+    # Create the school admin user DISABLED
+    new_admin = User(
+        name=req.contact_name,
+        username=req.requested_admin_username,
+        email=req.contact_email,
+        user_type="admin",
+        is_active=False,  # ✅ disabled by default
+        password_hash=generate_password_hash(temp_password),
+        created_at=datetime.utcnow()
+    )
+
+    db.session.add(new_admin)
+    db.session.flush()  # gives new_admin.id without commit
+
+    req.status = "approved"
+    req.reviewed_at = datetime.utcnow()
+    req.reviewed_by_user_id = session.get("user_id")
+    req.admin_user_id = new_admin.id
+
+    db.session.commit()
+
+    # MVP delivery: show temp password once (later you can email it)
+    flash(
+        f"Approved {req.institution_name}. Admin account created (DISABLED). "
+        f"Username: {new_admin.username} | Temporary password: {temp_password}",
+        "success"
+    )
+    return redirect(url_for("super_admin_dashboard", view="requests"))
+
+
+@app.route('/super-admin/institutions/<int:req_id>/reject', methods=['POST'])
+@require_super_admin
+def super_admin_reject_institution(req_id):
+    req = InstitutionSignupRequest.query.get_or_404(req_id)
+    if req.status != 'pending':
+        flash("This request is not pending.", "warning")
+        return redirect(url_for('super_admin_dashboard', view='requests'))
+
+    req.status = 'rejected'
+    db.session.commit()
+    flash(f"Rejected: {req.institution_name}", "success")
+    return redirect(url_for('super_admin_dashboard', view='requests'))
+
+@app.route("/super-admin/accounts/<int:user_id>/toggle-active", methods=["POST"])
+@require_super_admin
+def super_admin_toggle_user_active(user_id):
+    u = User.query.get_or_404(user_id)
+
+    # do not allow disabling yourself
+    if session.get("user_id") == u.id:
+        flash("You cannot change your own active status.", "warning")
+        return redirect(safe_return_to(view="accounts"))
+
+    u.is_active = not bool(u.is_active)
+    db.session.commit()
+    flash(f"Updated status for {u.username}.", "success")
+    return redirect(safe_return_to(view="accounts"))
+
+
+@app.route("/super-admin/accounts/<int:user_id>/reset-password", methods=["POST"])
+@require_super_admin
+def super_admin_reset_password(user_id):
+    u = User.query.get_or_404(user_id)
+
+    # Prevent resetting your own password accidentally from this screen
+    if u.id == session.get("user_id"):
+        flash("For safety, you can't reset your own password from here.", "error")
+        return redirect(url_for("super_admin_dashboard", view="accounts"))
+
+    temp_password = _make_temp_password()
+
+    u.password_hash = generate_password_hash(temp_password)
+
+    # ✅ Recommended: after reset, disable account until they confirm credentials
+    u.is_active = False
+
+    db.session.commit()
+
+    flash(
+        f"Password reset for {u.username}. Temporary password: {temp_password} "
+        f"(Account has been DISABLED until you enable it.)",
+        "success"
+    )
+    return redirect(safe_return_to(view="accounts"))
+
+from urllib.parse import urlparse
+from flask import request
+
+def safe_return_to(default_endpoint="super_admin_dashboard", **default_kwargs):
+    """
+    Redirect back to a safe same-host URL sent by forms via return_to.
+    Falls back to default endpoint.
+    """
+    return_to = request.form.get("return_to") or request.args.get("return_to")
+    if return_to:
+        # only allow relative paths to prevent open redirects
+        parsed = urlparse(return_to)
+        if parsed.scheme == "" and parsed.netloc == "":
+            return return_to
+    
+    return url_for(default_endpoint, **default_kwargs)
+
+
+@app.route("/super-admin/accounts/bulk", methods=["POST"], endpoint="super_admin_bulk_accounts_action")
+def super_admin_bulk_accounts_action():
+    if "user_id" not in session or session.get("user_type") != "super_admin":
+        flash("Unauthorized.", "error")
+        return redirect(url_for("login"))
+
+    action = request.form.get("action", "").strip()
+    user_ids = request.form.getlist("user_ids")
+
+    if not user_ids:
+        flash("No accounts selected.", "warning")
+        return redirect(url_for("super_admin_dashboard", view="accounts"))
+
+    users = User.query.filter(User.id.in_(user_ids)).all()
+
+    if action == "disable":
+        for u in users:
+            if u.user_type == "super_admin":
+                continue
+            u.is_active = False
         db.session.commit()
+        flash(f"Disabled {len(users)} account(s).", "success")
 
-        return render_template('institution_signup.html', success="Thanks! Your request was submitted. We'll contact you soon.")
+    elif action == "enable":
+        for u in users:
+            u.is_active = True
+        db.session.commit()
+        flash(f"Enabled {len(users)} account(s).", "success")
 
-    return render_template('institution_signup.html')
+    elif action == "delete":
+        for u in users:
+            if u.user_type == "super_admin":
+                continue
+            db.session.delete(u)
+        db.session.commit()
+        flash(f"Deleted {len(users)} account(s).", "success")
+
+    else:
+        flash("Invalid bulk action.", "error")
+
+    return redirect(url_for("super_admin_dashboard", view="accounts"))
+
+
+@app.route("/super-admin/institutions/<int:req_id>")
+@require_super_admin
+def super_admin_institution_detail(req_id):
+    inst = InstitutionSignupRequest.query.get_or_404(req_id)
+    admin_user = User.query.get(inst.admin_user_id) if inst.admin_user_id else None
+    return render_template("super_admin_institution_detail.html", inst=inst, admin_user=admin_user)
+
+
+
+def _valid_username(u: str) -> bool:
+    # allow letters, numbers, underscore, dot, dash
+    return bool(re.fullmatch(r"[A-Za-z0-9._-]{3,30}", u or ""))
+
+@app.route("/institution/signup", methods=["GET", "POST"])
+def institution_signup():
+    if request.method == "GET":
+        return render_template("institution_signup.html")
+
+    institution_name = (request.form.get("institution_name") or "").strip()
+    contact_name = (request.form.get("contact_name") or "").strip()
+    contact_email = (request.form.get("contact_email") or "").strip().lower()
+    country = (request.form.get("country") or "").strip()
+    requested_admin_username = (request.form.get("requested_admin_username") or "").strip()
+
+    # Basic validation
+    if not institution_name or not contact_name or not contact_email or not requested_admin_username:
+        flash("Please fill in all required fields.", "error")
+        return redirect(url_for("institution_signup"))
+
+    if not _valid_username(requested_admin_username):
+        flash("Username must be 3–30 characters and only letters, numbers, . _ -", "error")
+        return redirect(url_for("institution_signup"))
+
+    # Username must be unique across USERS and across existing REQUESTS
+    existing_user = User.query.filter_by(username=requested_admin_username).first()
+    if existing_user:
+        flash("That username is already taken. Please choose another.", "error")
+        return redirect(url_for("institution_signup"))
+
+    existing_req = InstitutionSignupRequest.query.filter_by(requested_admin_username=requested_admin_username).first()
+    if existing_req:
+        flash("That username is already requested. Please choose another.", "error")
+        return redirect(url_for("institution_signup"))
+
+    # Optional: avoid spam duplicates by email+institution pending
+    duplicate = InstitutionSignupRequest.query.filter_by(
+        contact_email=contact_email,
+        institution_name=institution_name,
+        status="pending"
+    ).first()
+    if duplicate:
+        flash("You already submitted a request for this institution. Please wait for review.", "warning")
+        return redirect(url_for("login"))
+
+    req = InstitutionSignupRequest(
+        institution_name=institution_name,
+        contact_name=contact_name,
+        contact_email=contact_email,
+        country=country or None,
+        requested_admin_username=requested_admin_username,
+        status="pending",
+        created_at=datetime.utcnow()
+    )
+    db.session.add(req)
+    db.session.commit()
+
+    flash("Signup request submitted! You’ll be notified once it’s approved.", "success")
+    return redirect(url_for("login"))
+
+
 
 
 @app.route('/admin/users')
@@ -1307,35 +1587,39 @@ def student_dashboard():
 
 @app.route('/student/mark-attendance')
 def mark_attendance():
-    student_id = flask_session.get('user_id')
-    student = db.session.query(Student).filter_by(user_id=student_id).first()
-    
+    student_user_id = flask_session.get('user_id')
+    student = db.session.query(Student).filter_by(user_id=student_user_id).first()
+
     if not student:
         flash('Please login as a student', 'error')
         return redirect(url_for('login'))
-    
-    # Get active sessions for student's courses
+
+    requested_session_id = request.args.get("session_id", type=int)
+
     active_sessions_list = []
     for course in student.courses:
         for session_obj in course.sessions:
             if session_obj.status == 'active':
-                # Check if already marked attendance
                 existing = db.session.query(Attendance).filter_by(
                     student_id=student.id,
                     session_id=session_obj.id
                 ).first()
-                
-                session_data = {
+
+                active_sessions_list.append({
                     'id': session_obj.id,
                     'name': session_obj.name,
                     'course_name': course.name,
                     'location': session_obj.location,
                     'already_marked': existing is not None,
                     'marked_time': existing.timestamp if existing else None
-                }
-                active_sessions_list.append(session_data)
-    
-    return render_template('mark_attendance.html', sessions=active_sessions_list)
+                })
+
+    return render_template(
+        'mark_attendance.html',
+        sessions=active_sessions_list,
+        requested_session_id=requested_session_id
+    )
+
 
 
 
@@ -1486,6 +1770,122 @@ def attendance_analytics():
         })
     
     return render_template('attendance_analytics.html', analytics=analytics)
+
+@app.route("/student/attendance-history")
+def student_attendance_history():
+    if flask_session.get("user_type") != "student":
+        flash("Access denied", "error")
+        return redirect(url_for("login"))
+
+    user_id = flask_session.get("user_id")
+    student = db.session.query(Student).filter_by(user_id=user_id).first()
+    if not student:
+        flash("Student profile not found", "error")
+        return redirect(url_for("login"))
+
+    today = date.today()
+
+    course_summaries = []
+    for course in student.courses:
+        # Past sessions for this course
+        past_sessions = (
+            db.session.query(SessionModel)
+            .filter(
+                SessionModel.course_id == course.id,
+                SessionModel.status == "past"
+            )
+            .order_by(SessionModel.date.desc(), SessionModel.start_time.desc())
+            .all()
+        )
+
+        # Attendance records for this student in this course
+        records = (
+            db.session.query(Attendance, SessionModel)
+            .join(SessionModel, Attendance.session_id == SessionModel.id)
+            .filter(
+                Attendance.student_id == student.id,
+                SessionModel.course_id == course.id
+            )
+            .order_by(SessionModel.date.desc(), SessionModel.start_time.desc())
+            .all()
+        )
+
+        # Quick lookup: session_id -> attendance
+        att_by_session = {s.id: a for (a, s) in records}
+
+        present = sum(1 for (a, _s) in records if a.status == "present")
+        late = sum(1 for (a, _s) in records if a.status == "late")
+        excused = sum(1 for (a, _s) in records if a.status == "excused")
+        attended = present + late + excused
+
+        total_past = len(past_sessions)
+        absent = max(total_past - attended, 0)
+        rate = round((attended / total_past) * 100, 1) if total_past else 0
+
+        # Build a detailed list (every past session + status)
+        detailed = []
+        for s in past_sessions:
+            a = att_by_session.get(s.id)
+            detailed.append({
+                "session": s,
+                "status": a.status if a else "absent",
+                "marked_time": a.timestamp if a else None
+            })
+
+        course_summaries.append({
+            "course": course,
+            "rate": rate,
+            "total_past": total_past,
+            "present": present,
+            "late": late,
+            "excused": excused,
+            "absent": absent,
+            "detailed": detailed
+        })
+
+    return render_template(
+        "student_attendance_history.html",
+        student=student,
+        course_summaries=course_summaries
+    )
+
+@app.route("/student/notifications")
+def student_notifications():
+    if flask_session.get("user_type") != "student":
+        flash("Access denied", "error")
+        return redirect(url_for("login"))
+
+    user_id = flask_session.get("user_id")
+    notifications = (
+        db.session.query(Notification)
+        .filter(Notification.user_id == user_id)
+        .order_by(Notification.created_at.desc())
+        .all()
+    )
+    unread_count = sum(1 for n in notifications if not n.is_read)
+
+    return render_template(
+        "student_notifications.html",
+        notifications=notifications,
+        unread_count=unread_count
+    )
+
+@app.route("/api/notifications/mark-read/<int:notif_id>", methods=["POST"])
+def api_mark_notification_read(notif_id):
+    user_id = flask_session.get("user_id")
+    if not user_id:
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+
+    notif = db.session.get(Notification, notif_id)
+    if not notif or notif.user_id != user_id:
+        return jsonify({"success": False, "message": "Not found"}), 404
+
+    notif.is_read = True
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+
 
 # Profiles______________________________________________________
 # Profile Routes
@@ -1761,35 +2161,6 @@ def start_notification_checker():
     
     thread = threading.Thread(target=notification_loop, daemon=True)
     thread.start()
-
-@app.route("/health")
-def health():
-    return "ok", 200
-
-
-# Add startup probe endpoint
-@app.route('/startup')
-def startup():
-    """Startup probe for Railway"""
-    try:
-        # Test database connection
-        db.session.execute('SELECT 1')
-        return "ok", 200
-    except Exception as e:
-        print(f"Startup probe failed: {e}")
-        return "not ready", 503
-
-# Add readyness probe
-@app.route('/ready')
-def ready():
-    """Readiness probe for Railway"""
-    try:
-        # Test database connection
-        db.session.execute('SELECT 1')
-        return "ok", 200
-    except Exception as e:
-        print(f"Readyness probe failed: {e}")
-        return "not ready", 503
 
 
 

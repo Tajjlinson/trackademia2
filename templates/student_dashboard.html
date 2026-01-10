@@ -8,6 +8,16 @@
     <p>Student ID: {{ student.student_id }}</p>
 </div>
 
+<div style="margin-top: 10px; display:flex; gap:10px; flex-wrap:wrap;">
+  <a class="btn btn-outline-primary btn-sm" href="{{ url_for('student_attendance_history') }}">
+    <i class="fas fa-chart-line"></i> Attendance History
+  </a>
+  <a class="btn btn-outline-primary btn-sm" href="{{ url_for('student_notifications') }}">
+    <i class="fas fa-bell"></i> Notifications
+  </a>
+</div>
+
+
 <div class="dashboard-cards">
     <div class="card">
         <div class="card-icon bg-primary">
@@ -74,7 +84,7 @@
                 <td>{{ session.location }}</td>
                 <td>{{ session.start_time.strftime('%I:%M %p') }}</td>
                 <td>
-                    <a href="{{ url_for('mark_attendance') }}" class="btn btn-primary btn-sm">
+                    <a href="{{ url_for('mark_attendance', session_id=session.id) }}" class="btn btn-primary btn-sm">
                         <i class="fas fa-check"></i> Mark Attendance
                     </a>
                 </td>
@@ -121,31 +131,6 @@
     {% endif %}
 </div>
 
-
-<div class="col-xl-3 col-md-6 mb-4">
-    <div class="card border-left-warning shadow h-100 py-2">
-        <div class="card-body">
-            <div class="row no-gutters align-items-center">
-                <div class="col mr-2">
-                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                        My Profile
-                    </div>
-                    <div class="h5 mb-0 font-weight-bold text-gray-800">
-                        {{ name }}
-                    </div>
-                    <div class="mt-2 mb-0 text-muted text-xs">
-                        <a href="{{ url_for('student_profile') }}" class="text-warning">
-                            View Profile <i class="fas fa-arrow-right ml-1"></i>
-                        </a>
-                    </div>
-                </div>
-                <div class="col-auto">
-                    <i class="fas fa-user-graduate fa-2x text-gray-300"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <div class="table-responsive">
     <h2>My Courses</h2>

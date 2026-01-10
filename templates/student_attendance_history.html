@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Attendance History{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+  <h1>Attendance History</h1>
+  <p>{{ student.user.name }} • Student ID: {{ student.student_id }}</p>
+
+  <div style="margin-top: 10px;">
+    <a class="btn btn-outline-primary btn-sm" href="{{ url_for('student_dashboard') }}">
+      <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
+</div>
+
+{% if course_summaries %}
+  {% for item in course_summaries %}
+  <div class="card shadow mb-4" style="padding:16px; border-radius:12px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+      <div>
+        <h3 style="margin:0;">{{ item.course.code }} — {{ item.course.name }}</h3>
+        <small style="color:#64748b;">Past sessions: {{ item.total_past }}</small>
+      </div>
+
+      <div style="text-align:right;">
+        <div style="font-size:24px; font-weight:700;">
+          {{ item.rate }}%
+        </div>
+        <small style="color:#64748b;">Attendance Rate</small>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+      <span class="badge badge-success">Present: {{ item.present }}</span>
+      <span class="badge badge-warning">Late: {{ item.late }}</span>
+      <span class="badge badge-info">Excused: {{ item.excused }}</span>
+      <span class="badge badge-danger">Absent: {{ item.absent }}</span>
+    </div>
+
+    <div class="table-responsive" style="margin-top:14px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Session</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Status</th>
+            <th>Marked At</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if item.detailed %}
+            {% for row in item.detailed %}
+            <tr>
+              <td>{{ row.session.name }}</td>
+              <td>{{ row.session.date.strftime('%b %d, %Y') }}</td>
+              <td>{{ row.session.start_time.strftime('%I:%M %p') }}</td>
+              <td>
+                {% if row.status == 'present' %}
+                  <span class="badge badge-success">Present</span>
+                {% elif row.status == 'late' %}
+                  <span class="badge badge-warning">Late</span>
+                {% elif row.status == 'excused' %}
+                  <span class="badge badge-info">Excused</span>
+                {% else %}
+                  <span class="badge badge-danger">Absent</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.marked_time %}
+                  {{ row.marked_time.strftime('%b %d, %Y %I:%M %p') }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="5" style="text-align:center; padding:16px; color:#64748b;">
+              No past sessions yet.
+            </td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <p style="text-align:center; padding:20px; color:#64748b;">No courses found.</p>
+{% endif %}
+{% endblock %}

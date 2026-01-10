@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+  <h1>Notifications</h1>
+  <p>
+    {% if unread_count > 0 %}
+      You have <strong>{{ unread_count }}</strong> unread notification(s).
+    {% else %}
+      All caught up ✅
+    {% endif %}
+  </p>
+
+  <div style="margin-top: 10px;">
+    <a class="btn btn-outline-primary btn-sm" href="{{ url_for('student_dashboard') }}">
+      <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
+</div>
+
+<div class="table-responsive">
+  <table>
+    <thead>
+      <tr>
+        <th>Status</th>
+        <th>Message</th>
+        <th>Type</th>
+        <th>Date</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% if notifications %}
+        {% for n in notifications %}
+        <tr id="notif-{{ n.id }}" class="{{ 'unread' if not n.is_read else 'read' }}">
+          <td>
+            {% if n.is_read %}
+              <span class="badge badge-success">Read</span>
+            {% else %}
+              <span class="badge badge-warning">Unread</span>
+            {% endif %}
+          </td>
+          <td>{{ n.message }}</td>
+          <td><span class="badge badge-info">{{ n.type }}</span></td>
+          <td>{{ n.created_at.strftime('%b %d, %Y %I:%M %p') }}</td>
+          <td>
+            {% if not n.is_read %}
+            <button class="btn btn-sm btn-primary" onclick="markRead('{{ n.id }}')">
+              <i class="fas fa-check"></i> Mark Read
+            </button>
+            {% else %}
+              —
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="5" style="text-align:center; padding:16px; color:#64748b;">
+            No notifications yet.
+          </td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+async function markRead(id) {
+  const res = await fetch(`/api/notifications/mark-read/${id}`, { method: "POST" });
+  const data = await res.json();
+  if (data.success) {
+    const row = document.getElementById(`notif-${id}`);
+    if (row) {
+      row.style.fontWeight = "400";
+      row.querySelector("td:nth-child(1)").innerHTML = '<span class="badge badge-success">Read</span>';
+      row.querySelector("td:nth-child(5)").innerHTML = "—";
+    }
+  } else {
+    alert(data.message || "Failed to mark as read");
+  }
+}
+</script>
+{% endblock %}

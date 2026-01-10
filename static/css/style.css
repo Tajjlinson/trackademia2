@@ -998,3 +998,47 @@ html, body {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
+
+.table-actions{
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.btn-sm{
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  line-height: 1.1;
+}
+
+.superadmin-toolbar{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+  margin: 12px 0 18px;
+  flex-wrap: wrap;
+}
+
+.toolbar-right{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.toolbar-label{
+  font-weight:600;
+  color:#555;
+}
+
+.toolbar-select{
+  min-width: 220px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.12);
+  background: #fff;
+}
+
+

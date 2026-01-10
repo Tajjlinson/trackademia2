@@ -1,105 +1,454 @@
 {% extends "base.html" %}
 
-{% block title %}Admin Dashboard{% endblock %}
+{% block title %}Super Admin Dashboard{% endblock %}
 
 {% block content %}
-<div class="main-content">
-  <div class="dashboard-container">
+<div class="dashboard-container">
 
-    <div class="dashboard-header">
-      <h1>Admin Dashboard</h1>
-      <p>Welcome, {{ session.name }} - System Administration</p>
+  <div class="dashboard-header">
+    <h1>Super Admin Dashboard</h1>
+    <p>Welcome, {{ session.name }} - Platform Oversight</p>
+  </div>
+
+  <!-- Top stat cards -->
+  <div class="dashboard-cards">
+    <div class="card">
+      <div class="card-icon bg-primary"><i class="fas fa-users"></i></div>
+      <h3>{{ total_users }}</h3><p>Total Users</p>
+    </div>
+    <div class="card">
+      <div class="card-icon bg-success"><i class="fas fa-graduation-cap"></i></div>
+      <h3>{{ total_students }}</h3><p>Students</p>
+    </div>
+    <div class="card">
+      <div class="card-icon bg-warning"><i class="fas fa-chalkboard-teacher"></i></div>
+      <h3>{{ total_lecturers }}</h3><p>Lecturers</p>
+    </div>
+    <div class="card">
+      <div class="card-icon bg-danger"><i class="fas fa-book"></i></div>
+      <h3>{{ total_courses }}</h3><p>Courses</p>
+    </div>
+    <div class="card">
+      <div class="card-icon bg-info"><i class="fas fa-calendar-alt"></i></div>
+      <h3>{{ total_sessions }}</h3><p>Sessions</p>
+    </div>
+    <div class="card">
+      <div class="card-icon bg-secondary"><i class="fas fa-inbox"></i></div>
+      <h3>{{ pending_institution_count }}</h3><p>Signup Requests</p>
+    </div>
+  </div>
+
+  <!-- Super Admin view selector -->
+  <div class="superadmin-toolbar">
+    <div class="toolbar-left">
+      <h2 style="margin:0;">Super Admin Console</h2>
+      <small class="text-muted">Oversee institutions, accounts, and signup requests</small>
     </div>
 
-    <div class="dashboard-cards">
-      <div class="card">
-        <div class="card-icon bg-primary">
-          <i class="fas fa-users"></i>
-        </div>
-        <h3>{{ total_users }}</h3>
-        <p>Total Users</p>
-      </div>
+    <div class="toolbar-right">
+      <label for="viewSelect" class="toolbar-label">View:</label>
+      <select id="viewSelect" class="toolbar-select" onchange="location = this.value;">
+        <option value="{{ url_for('super_admin_dashboard', view='requests') }}" {{ 'selected' if view == 'requests' else '' }}>
+          Signup Requests
+        </option>
+        <option value="{{ url_for('super_admin_dashboard', view='institutions') }}" {{ 'selected' if view == 'institutions' else '' }}>
+          Institutions
+        </option>
+        <option value="{{ url_for('super_admin_dashboard', view='accounts') }}" {{ 'selected' if view == 'accounts' else '' }}>
+          Accounts
+        </option>
+      </select>
+    </div>
+  </div>
 
-      <div class="card">
-        <div class="card-icon bg-success">
-          <i class="fas fa-graduation-cap"></i>
-        </div>
-        <h3>{{ total_students }}</h3>
-        <p>Students</p>
-      </div>
+  <!-- ✅ TABLE SECTION FIRST (as requested) -->
+  {% if view == 'requests' %}
+  <div class="dashboard-card">
+    <div class="dashboard-card-header">
+      <h2>Pending Institution Signup Requests</h2>
+    </div>
 
-      <div class="card">
-        <div class="card-icon bg-warning">
-          <i class="fas fa-chalkboard-teacher"></i>
-        </div>
-        <h3>{{ total_lecturers }}</h3>
-        <p>Lecturers</p>
-      </div>
+    <div class="table-scroll">
+      <div class="table-responsive">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>Institution</th>
+              <th>Contact</th>
+              <th>Email</th>
+              <th>Country</th>
+              <th>Admin Username</th>
+              <th>Submitted</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
 
-      <div class="card">
-        <div class="card-icon bg-danger">
-          <i class="fas fa-book"></i>
-        </div>
-        <h3>{{ total_courses }}</h3>
-        <p>Courses</p>
-      </div>
+          <tbody>
+            {% for r in pending_institution_requests %}
+            <tr>
+              <td>{{ r.institution_name }}</td>
+              <td>{{ r.contact_name }}</td>
+              <td>{{ r.contact_email }}</td>
+              <td>{{ r.country or '-' }}</td>
+              <td><strong>{{ r.requested_admin_username }}</strong></td>
+              <td>{{ r.created_at.strftime('%Y-%m-%d') }}</td>
+              <td style="text-align:right;">
+                <div class="table-actions">
+                  <form method="POST" action="{{ url_for('super_admin_approve_institution', req_id=r.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                  </form>
 
-      <div class="card">
-        <div class="card-icon bg-info">
-          <i class="fas fa-calendar-alt"></i>
-        </div>
-        <h3>{{ total_sessions }}</h3>
-        <p>Sessions</p>
-      </div>
+                  <form method="POST" action="{{ url_for('super_admin_reject_institution', req_id=r.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-sm"
+                            onclick="return confirm('Reject {{ r.institution_name }}?');">
+                      Reject
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
 
-      <div class="card">
-        <div class="card-icon bg-secondary">
-          <i class="fas fa-exclamation-circle"></i>
+            {% if pending_institution_requests|length == 0 %}
+            <tr>
+              <td colspan="7" style="text-align:center; padding: 14px;">No pending requests 🎉</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {% elif view == 'institutions' %}
+  <div class="dashboard-card">
+    <div class="dashboard-card-header">
+      <h2>Institutions</h2>
+    </div>
+
+    <!-- ✅ Filters (PER PAGE belongs here inside the form) -->
+    <div class="p-3">
+      <form method="GET" class="row g-2 align-items-end">
+        <input type="hidden" name="view" value="institutions">
+        <input type="hidden" name="inst_page" value="1">
+
+        <div class="col-12 col-md-2">
+          <label class="form-label">Status</label>
+          <select class="form-select" name="inst_status">
+            <option value="approved" {{ 'selected' if inst_status=='approved' else '' }}>Approved</option>
+            <option value="rejected" {{ 'selected' if inst_status=='rejected' else '' }}>Rejected</option>
+            <option value="pending"  {{ 'selected' if inst_status=='pending' else '' }}>Pending</option>
+            <option value="all"      {{ 'selected' if inst_status=='all' else '' }}>All</option>
+          </select>
         </div>
-        <h3>{{ pending_requests }}</h3>
-        <p>Pending Requests</p>
+
+        <div class="col-12 col-md-2">
+          <label class="form-label">Country</label>
+          <select class="form-select" name="inst_country">
+            <option value="">All countries</option>
+            {% for c in countries %}
+              <option value="{{ c }}" {{ 'selected' if inst_country==c else '' }}>{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label">Search</label>
+          <input class="form-control" name="inst_q" value="{{ inst_q }}" placeholder="Institution / email / username">
+        </div>
+
+        <div class="col-12 col-md-2">
+          <label class="form-label">Per page</label>
+          <select class="form-select" name="inst_per_page">
+            <option value="10" {{ 'selected' if inst_per_page==10 else '' }}>10</option>
+            <option value="25" {{ 'selected' if inst_per_page==25 else '' }}>25</option>
+            <option value="50" {{ 'selected' if inst_per_page==50 else '' }}>50</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-md-2 d-flex gap-2">
+          <button class="btn btn-primary w-100" type="submit">Apply</button>
+          <a class="btn btn-outline-secondary w-100" href="{{ url_for('super_admin_dashboard', view='institutions') }}">Reset</a>
+        </div>
+      </form>
+    </div>
+
+    <div class="table-scroll">
+      <div class="table-responsive">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>Institution</th>
+              <th>Contact</th>
+              <th>Email</th>
+              <th>Country</th>
+              <th>Admin Username</th>
+              <th>Status</th>
+              <th style="text-align:right;">Open</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for r in institutions_filtered %}
+            <tr>
+              <td>{{ r.institution_name }}</td>
+              <td>{{ r.contact_name }}</td>
+              <td>{{ r.contact_email }}</td>
+              <td>{{ r.country or '-' }}</td>
+              <td><strong>{{ r.requested_admin_username }}</strong></td>
+              <td>
+                {% if r.status == 'approved' %}
+                  <span class="badge bg-success">Approved</span>
+                {% elif r.status == 'rejected' %}
+                  <span class="badge bg-danger">Rejected</span>
+                {% elif r.status == 'pending' %}
+                  <span class="badge bg-warning text-dark">Pending</span>
+                {% else %}
+                  <span class="badge bg-secondary">{{ r.status }}</span>
+                {% endif %}
+              </td>
+              <td style="text-align:right;">
+                <a class="btn btn-outline-primary btn-sm"
+                   href="{{ url_for('super_admin_institution_detail', req_id=r.id) }}">
+                  View
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+
+            {% if institutions_filtered|length == 0 %}
+            <tr>
+              <td colspan="7" style="text-align:center; padding: 14px;">No results.</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <div class="dashboard-card">
+    {% if inst_pagination and inst_pagination.pages > 1 %}
+    <div class="d-flex justify-content-between align-items-center p-3">
+      <div class="text-muted small">
+        Page {{ inst_pagination.page }} of {{ inst_pagination.pages }}
+      </div>
+
+      <div class="d-flex gap-2">
+        {% if inst_pagination.has_prev %}
+          <a class="btn btn-outline-secondary btn-sm"
+             href="{{ url_for('super_admin_dashboard',
+                              view='institutions',
+                              inst_status=inst_status,
+                              inst_country=inst_country,
+                              inst_q=inst_q,
+                              inst_per_page=inst_per_page,
+                              inst_page=inst_pagination.prev_num) }}">
+            Prev
+          </a>
+        {% endif %}
+
+        {% if inst_pagination.has_next %}
+          <a class="btn btn-outline-secondary btn-sm"
+             href="{{ url_for('super_admin_dashboard',
+                              view='institutions',
+                              inst_status=inst_status,
+                              inst_country=inst_country,
+                              inst_q=inst_q,
+                              inst_per_page=inst_per_page,
+                              inst_page=inst_pagination.next_num) }}">
+            Next
+          </a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+{% elif view == 'accounts' %}
+<div class="dashboard-card">
   <div class="dashboard-card-header">
-    <h2>Pending Institution Signup Requests</h2>
+    <h2>Accounts</h2>
   </div>
 
-  <div class="table-scroll">
-    <div class="table-responsive">
-      <table class="dash-table">
-        <thead>
-          <tr>
-            <th>Institution</th>
-            <th>Contact</th>
-            <th>Email</th>
-            <th>Country</th>
-            <th>Submitted</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for r in pending_institution_requests %}
-          <tr>
-            <td>{{ r.institution_name }}</td>
-            <td>{{ r.contact_name }}</td>
-            <td>{{ r.contact_email }}</td>
-            <td>{{ r.country or '-' }}</td>
-            <td>{{ r.created_at.strftime('%Y-%m-%d') }}</td>
-          </tr>
-          {% endfor %}
-          {% if pending_institution_requests|length == 0 %}
-          <tr>
-            <td colspan="5" style="text-align:center; padding: 14px;">No pending requests 🎉</td>
-          </tr>
-          {% endif %}
-        </tbody>
-      </table>
+  <!-- Filters -->
+  <div class="p-3">
+    <form method="GET" class="row g-2 align-items-end">
+      <input type="hidden" name="view" value="accounts">
+      <input type="hidden" name="acc_page" value="1">
+
+      <div class="col-12 col-md-2">
+        <label class="form-label">Role</label>
+        <select class="form-select" name="acc_role">
+          <option value="all" {{ 'selected' if acc_role=='all' else '' }}>All</option>
+          <option value="super_admin" {{ 'selected' if acc_role=='super_admin' else '' }}>Super Admin</option>
+          <option value="admin" {{ 'selected' if acc_role=='admin' else '' }}>Admin</option>
+          <option value="lecturer" {{ 'selected' if acc_role=='lecturer' else '' }}>Lecturer</option>
+          <option value="student" {{ 'selected' if acc_role=='student' else '' }}>Student</option>
+        </select>
+      </div>
+
+      <div class="col-12 col-md-2">
+        <label class="form-label">Status</label>
+        <select class="form-select" name="acc_status">
+          <option value="all" {{ 'selected' if acc_status=='all' else '' }}>All</option>
+          <option value="active" {{ 'selected' if acc_status=='active' else '' }}>Active</option>
+          <option value="disabled" {{ 'selected' if acc_status=='disabled' else '' }}>Disabled</option>
+        </select>
+      </div>
+
+      <div class="col-12 col-md-4">
+        <label class="form-label">Search</label>
+        <input class="form-control" name="acc_q" value="{{ acc_q }}" placeholder="Name / username / email">
+      </div>
+
+      <div class="col-12 col-md-2">
+        <label class="form-label">Per page</label>
+        <select class="form-select" name="acc_per_page">
+          <option value="10" {{ 'selected' if acc_per_page==10 else '' }}>10</option>
+          <option value="25" {{ 'selected' if acc_per_page==25 else '' }}>25</option>
+          <option value="50" {{ 'selected' if acc_per_page==50 else '' }}>50</option>
+        </select>
+      </div>
+
+      <div class="col-12 col-md-2 d-flex gap-2">
+        <button class="btn btn-primary w-100" type="submit">Apply</button>
+        <a class="btn btn-outline-secondary w-100" href="{{ url_for('super_admin_dashboard', view='accounts') }}">Reset</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Bulk actions form -->
+  <form method="POST" action="{{ url_for('super_admin_bulk_accounts_action') }}">
+    <input type="hidden" name="return_to" value="{{ request.full_path }}">
+
+    <div class="d-flex justify-content-between align-items-center px-3 pb-2 flex-wrap gap-2">
+      <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-warning btn-sm" name="action" value="disable"
+                onclick="return confirm('Disable selected accounts?');">
+          Disable Selected
+        </button>
+        <button class="btn btn-success btn-sm" name="action" value="enable"
+                onclick="return confirm('Enable selected accounts?');">
+          Enable Selected
+        </button>
+      </div>
+
+      <div class="text-muted small">
+        Showing {{ all_accounts|length }} on this page
+      </div>
+    </div>
+
+    <div class="table-scroll">
+      <div class="table-responsive">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th style="width:38px;">
+                <input type="checkbox" id="selectAll">
+              </th>
+              <th>Name</th>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for u in all_accounts %}
+            <tr>
+              <td>
+                <input type="checkbox" class="rowCheck" name="user_ids" value="{{ u.id }}">
+              </td>
+
+              <td>{{ u.name }}</td>
+              <td><strong>{{ u.username }}</strong></td>
+              <td>{{ u.email or '-' }}</td>
+              <td><span class="badge bg-dark">{{ u.user_type|title }}</span></td>
+
+              <td>
+                {% if u.is_active %}
+                  <span class="badge bg-success">Active</span>
+                {% else %}
+                  <span class="badge bg-secondary">Disabled</span>
+                {% endif %}
+              </td>
+
+              <td>{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+
+              <td style="text-align:right;">
+                <div class="table-actions">
+                  <form method="POST" action="{{ url_for('super_admin_toggle_user_active', user_id=u.id) }}" style="display:inline;">
+                    <input type="hidden" name="return_to" value="{{ request.full_path }}">
+                    <button type="submit" class="btn btn-warning btn-sm"
+                            onclick="return confirm('Toggle active status for {{ u.username }}?');">
+                      {% if u.is_active %}Disable{% else %}Enable{% endif %}
+                    </button>
+                  </form>
+
+                  <form method="POST" action="{{ url_for('super_admin_reset_password', user_id=u.id) }}" style="display:inline;">
+                    <input type="hidden" name="return_to" value="{{ request.full_path }}">
+                    <button type="submit" class="btn btn-primary btn-sm"
+                            onclick="return confirm('Reset password for {{ u.username }}?');">
+                      Reset Password
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+
+            {% if all_accounts|length == 0 %}
+            <tr>
+              <td colspan="8" style="text-align:center; padding: 14px;">No results.</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </form>
+
+  {% if acc_pagination and acc_pagination.pages > 1 %}
+  <div class="d-flex justify-content-between align-items-center p-3">
+    <div class="text-muted small">
+      Page {{ acc_pagination.page }} of {{ acc_pagination.pages }}
+    </div>
+
+    <div class="d-flex gap-2">
+      {% if acc_pagination.has_prev %}
+        <a class="btn btn-outline-secondary btn-sm"
+           href="{{ url_for('super_admin_dashboard',
+                            view='accounts',
+                            acc_role=acc_role,
+                            acc_status=acc_status,
+                            acc_q=acc_q,
+                            acc_per_page=acc_per_page,
+                            acc_page=acc_pagination.prev_num) }}">
+          Prev
+        </a>
+      {% endif %}
+
+      {% if acc_pagination.has_next %}
+        <a class="btn btn-outline-secondary btn-sm"
+           href="{{ url_for('super_admin_dashboard',
+                            view='accounts',
+                            acc_role=acc_role,
+                            acc_status=acc_status,
+                            acc_q=acc_q,
+                            acc_per_page=acc_per_page,
+                            acc_page=acc_pagination.next_num) }}">
+          Next
+        </a>
+      {% endif %}
     </div>
   </div>
+  {% endif %}
 </div>
+{% endif %}
 
-  <!-- ✅ Today / This Week Summary -->
+  <!-- ✅ Summary moved BELOW table section (as requested) -->
   <div class="dashboard-card activity-summary-card">
     <div class="dashboard-card-header">
       <h2>Today / This Week</h2>
@@ -138,138 +487,17 @@
     </div>
   </div>
 
-
-    <!-- ✅ Equal-height tables section -->
-<div class="dashboard-grid">
-
-  <!-- Recent Users -->
-  <div class="dashboard-card">
-    <div class="dashboard-card-header">
-      <h2>Recent Users</h2>
-    </div>
-
-    <div class="table-scroll">
-      <div class="table-responsive">
-        <table class="dash-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Username</th>
-              <th>Type</th>
-              <th>Created</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for user in recent_users %}
-            <tr>
-              <td>{{ user.name }}</td>
-              <td>{{ user.username }}</td>
-              <td>
-                <span class="badge badge-{{ 'primary' if user.user_type == 'admin' else 'success' if user.user_type == 'lecturer' else 'info' }}">
-                  {{ user.user_type|title }}
-                </span>
-              </td>
-              <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="dashboard-card-footer">
-      <a href="{{ url_for('admin_users') }}" class="btn btn-primary">View All Users</a>
-    </div>
-  </div>
-
-  <!-- Recent Courses -->
-  <div class="dashboard-card">
-    <div class="dashboard-card-header">
-      <h2>Recent Courses</h2>
-    </div>
-
-    <div class="table-scroll">
-      <div class="table-responsive">
-        <table class="dash-table">
-          <thead>
-            <tr>
-              <th>Code</th>
-              <th>Name</th>
-              <th>Lecturer</th>
-              <th>Students</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for course in recent_courses %}
-            <tr>
-              <td>{{ course.code }}</td>
-              <td>{{ course.name }}</td>
-              <td>{{ course.lecturer.user.name }}</td>
-              <td>{{ course.students|length }}/{{ course.max_capacity }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="dashboard-card-footer">
-      <a href="{{ url_for('admin_courses') }}" class="btn btn-primary">View All Courses</a>
-    </div>
-  </div>
-
 </div>
+{% endblock %}
 
-    <!-- ✅ Put profile card inside a proper row so spacing/layout behaves -->
-    <div class="row mt-4">
-      <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-primary shadow h-100 py-2">
-          <div class="card-body">
-            <div class="row no-gutters align-items-center">
-              <div class="col mr-2">
-                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                  My Profile
-                </div>
-                <div class="h5 mb-0 font-weight-bold text-gray-800">
-                  {{ name }}
-                </div>
-                <div class="mt-2 mb-0 text-muted text-xs">
-                  <a href="{{ url_for('admin_profile') }}" class="text-primary">
-                    View Profile <i class="fas fa-arrow-right ml-1"></i>
-                  </a>
-                </div>
-              </div>
-              <div class="col-auto">
-                <i class="fas fa-user-shield fa-2x text-gray-300"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+{% block scripts %}
+<script>
+  const selectAll = document.getElementById("selectAll");
+  if (selectAll) {
+    selectAll.addEventListener("change", function () {
+      document.querySelectorAll(".rowCheck").forEach(cb => cb.checked = selectAll.checked);
+    });
+  }
+</script>
 
-    <!-- Quick Actions -->
-    <div class="quick-actions mt-4">
-      <h2>Quick Actions</h2>
-      <div class="action-buttons">
-        <a href="{{ url_for('admin_create_user') }}" class="btn btn-success">
-          <i class="fas fa-user-plus"></i> Add New User
-        </a>
-        <a href="{{ url_for('admin_create_course') }}" class="btn btn-success">
-          <i class="fas fa-book-medical"></i> Create Course
-        </a>
-        <a href="{{ url_for('admin_import_users') }}" class="btn btn-info">
-          <i class="fas fa-file-import"></i> Import Users
-        </a>
-        <a href="{{ url_for('admin_removal_requests') }}" class="btn btn-warning">
-          <i class="fas fa-clipboard-list"></i> Review Requests
-        </a>
-        <a href="{{ url_for('admin_reports') }}" class="btn btn-primary">
-          <i class="fas fa-chart-bar"></i> View Reports
-        </a>
-      </div>
-    </div>
-
-  </div>
-</div>
 {% endblock %}

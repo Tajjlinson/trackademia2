@@ -33,8 +33,42 @@
 
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
+
                     {% if 'user_id' in session %}
-                        {% if session.user_type == 'admin' %}
+
+                        {% if session.user_type == 'super_admin' %}
+                            <li class="nav-item">
+                                <a class="nav-link {{ 'active' if request.endpoint == 'super_admin_dashboard' }}"
+                                   href="{{ url_for('super_admin_dashboard') }}">
+                                    <i class="fas fa-shield-halved me-1"></i> Super Admin
+                                </a>
+                            </li>
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="platformDropdown" role="button"
+                                   data-bs-toggle="dropdown">
+                                    <i class="fas fa-sitemap me-1"></i> Platform
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('super_admin_dashboard', view='requests') }}">
+                                            <i class="fas fa-inbox me-2"></i> Signup Requests
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('super_admin_dashboard', view='institutions') }}">
+                                            <i class="fas fa-school me-2"></i> Institutions
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('super_admin_dashboard', view='accounts') }}">
+                                            <i class="fas fa-users me-2"></i> Accounts
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                        {% elif session.user_type == 'admin' %}
                             <li class="nav-item">
                                 <a class="nav-link {{ 'active' if request.endpoint == 'admin_dashboard' }}"
                                    href="{{ url_for('admin_dashboard') }}">
@@ -142,6 +176,7 @@
                                 </a>
                             </li>
                         {% endif %}
+
                     {% endif %}
                 </ul>
 
@@ -167,7 +202,13 @@
                                     </a>
                                 </li>
 
-                                {% if session.user_type == 'admin' %}
+                                {% if session.user_type == 'super_admin' %}
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('super_admin_dashboard') }}">
+                                            <i class="fas fa-shield-halved me-2"></i> Super Admin Dashboard
+                                        </a>
+                                    </li>
+                                {% elif session.user_type == 'admin' %}
                                     <li>
                                         <a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">
                                             <i class="fas fa-cog me-2"></i> Admin Dashboard
@@ -203,6 +244,7 @@
                         </li>
                     {% endif %}
                 </ul>
+
             </div>
         </div>
     </nav>
@@ -222,7 +264,6 @@
     </div>
 
     <div class="main-content">
-
         {% block content %}{% endblock %}
     </div>
 

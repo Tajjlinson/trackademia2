@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Institution Details{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h2 class="mb-1">{{ inst.institution_name }}</h2>
+      <div class="text-muted">
+        Request ID: {{ inst.id }} • Submitted: {{ inst.created_at.strftime('%Y-%m-%d %H:%M') if inst.created_at else '-' }}
+      </div>
+    </div>
+
+    <a class="btn btn-outline-secondary"
+       href="{{ url_for('super_admin_dashboard', view='institutions') }}">
+      Back to Institutions
+    </a>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <strong>Request Overview</strong>
+      <div>
+        {% if inst.status == 'approved' %}
+          <span class="badge bg-success">Approved</span>
+        {% elif inst.status == 'rejected' %}
+          <span class="badge bg-danger">Rejected</span>
+        {% elif inst.status == 'pending' %}
+          <span class="badge bg-warning text-dark">Pending</span>
+        {% else %}
+          <span class="badge bg-secondary">{{ inst.status }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div><strong>Contact Name:</strong> {{ inst.contact_name }}</div>
+          <div><strong>Contact Email:</strong> {{ inst.contact_email }}</div>
+          <div><strong>Country:</strong> {{ inst.country or '-' }}</div>
+        </div>
+        <div class="col-md-6">
+          <div><strong>Requested Admin Username:</strong> {{ inst.requested_admin_username or '-' }}</div>
+          <div><strong>Estimated Students:</strong> {{ inst.estimated_students or '-' }}</div>
+          <div><strong>Estimated Lecturers:</strong> {{ inst.estimated_lecturers or '-' }}</div>
+        </div>
+        {% if inst.message %}
+        <div class="col-12">
+          <hr>
+          <strong>Message</strong>
+          <div class="mt-1">{{ inst.message }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <strong>Linked Admin Account</strong>
+    </div>
+    <div class="card-body">
+      {% if admin_user %}
+        <div class="row g-3 align-items-center">
+          <div class="col-md-4">
+            <div><strong>Name:</strong> {{ admin_user.name }}</div>
+            <div><strong>Username:</strong> {{ admin_user.username }}</div>
+          </div>
+          <div class="col-md-4">
+            <div><strong>Email:</strong> {{ admin_user.email or '-' }}</div>
+            <div><strong>Status:</strong>
+              {% if admin_user.is_active %}
+                <span class="badge bg-success">Active</span>
+              {% else %}
+                <span class="badge bg-secondary">Disabled</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="col-md-4 text-md-end">
+            <form method="POST" action="{{ url_for('super_admin_toggle_user_active', user_id=admin_user.id) }}" class="d-inline">
+              <button class="btn btn-warning"
+                      onclick="return confirm('Toggle active status for {{ admin_user.username }}?');">
+                {% if admin_user.is_active %}Disable{% else %}Enable{% endif %}
+              </button>
+            </form>
+
+            <form method="POST" action="{{ url_for('super_admin_reset_password', user_id=admin_user.id) }}" class="d-inline">
+              <button class="btn btn-primary"
+                      onclick="return confirm('Reset password for {{ admin_user.username }}?');">
+                Reset Password
+              </button>
+            </form>
+          </div>
+        </div>
+      {% else %}
+        <div class="text-muted">
+          No admin user linked yet (admin_user_id is empty). This usually means the request has not been approved / account not created.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

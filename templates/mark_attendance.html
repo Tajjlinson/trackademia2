@@ -8,6 +8,26 @@
     <p>Available active sessions for attendance marking</p>
 </div>
 
+{% if sessions %}
+    {% set selected = (requested_session_id if requested_session_id is defined else None) %}
+
+    <div style="margin-bottom: 16px;">
+        <label for="sessionSelect" style="font-weight:600; margin-bottom:6px; display:block;">
+            Choose a session
+        </label>
+        <select id="sessionSelect" class="form-select">
+            {% for s in sessions %}
+                <option value="{{ s.id }}" {% if selected == s.id %}selected{% endif %}>
+                    {{ s.course_name }} — {{ s.name }} ({{ s.location }})
+                </option>
+            {% endfor %}
+        </select>
+        <small style="color:#64748b;">
+            Tip: You can also click “Mark Attendance” directly in the table.
+        </small>
+    </div>
+{% endif %}
+
 <div class="table-responsive">
     {% if sessions %}
     <table>
@@ -23,33 +43,41 @@
         </thead>
         <tbody>
             {% for session in sessions %}
-            <tr>
+            <tr id="session-{{ session.id }}">
                 <td>{{ session.name }}</td>
                 <td>{{ session.course_name }}</td>
                 <td>{{ session.location }}</td>
                 <td>
-                    {% if session.marked_time %}
-                    {{ session.marked_time.strftime('%I:%M %p') }}
+                    {# If you later add session start_time into the dict, show it here #}
+                    {% if session.start_time is defined and session.start_time %}
+                        {{ session.start_time }}
+                    {% elif session.marked_time %}
+                        {{ session.marked_time.strftime('%I:%M %p') }}
+                    {% else %}
+                        —
                     {% endif %}
                 </td>
                 <td>
                     {% if session.already_marked %}
-                    <span class="status-badge" style="background-color: #dcfce7; color: #166534;">
-                        <i class="fas fa-check"></i> Marked
-                    </span>
+                        <span class="status-badge" style="background-color: #dcfce7; color: #166534;">
+                            <i class="fas fa-check"></i> Marked
+                        </span>
                     {% else %}
-                    <span class="status-badge" style="background-color: #fef3c7; color: #92400e;">
-                        <i class="fas fa-clock"></i> Pending
-                    </span>
+                        <span class="status-badge" style="background-color: #fef3c7; color: #92400e;">
+                            <i class="fas fa-clock"></i> Pending
+                        </span>
                     {% endif %}
                 </td>
                 <td>
                     {% if not session.already_marked %}
-                    <button onclick="markAttendance('{{ session.id }}')" class="btn btn-primary btn-sm">
-                        <i class="fas fa-location-dot"></i> Mark Attendance
-                    </button>
+                        <button
+                            type="button"
+                            class="btn btn-primary btn-sm"
+                            onclick="markAttendance('{{ session.id }}', this)">
+                            <i class="fas fa-location-dot"></i> Mark Attendance
+                        </button>
                     {% else %}
-                    <span style="color: #64748b;">Attendance already marked</span>
+                        <span style="color: #64748b;">Attendance already marked</span>
                     {% endif %}
                 </td>
             </tr>
@@ -64,12 +92,37 @@
     </div>
     {% endif %}
 </div>
-{% endblock %}
 
-<!-- In mark_attendance.html, update the JavaScript -->
+{% if requested_session_id is defined and requested_session_id %}
 <script>
-async function markAttendance(sessionId) {
+  (function () {
+    const el = document.getElementById("session-{{ requested_session_id }}");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.style.outline = "2px solid #0d6efd";
+      el.style.borderRadius = "8px";
+    }
+  })();
+</script>
+{% endif %}
+
+<script>
+async function markAttendance(sessionId, btn) {
+    // btn is passed explicitly to avoid relying on global `event`
+    const originalHTML = btn ? btn.innerHTML : "";
+
     try {
+        if (!navigator.geolocation) {
+            alert("Geolocation is not supported by your browser.");
+            return;
+        }
+
+        // Loading state
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking location...';
+            btn.disabled = true;
+        }
+
         // Ask for location permission
         const position = await new Promise((resolve, reject) => {
             navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -77,18 +130,13 @@ async function markAttendance(sessionId) {
                 timeout: 10000
             });
         });
-        
+
         const locationData = {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
             accuracy: position.coords.accuracy
         };
-        
-        // Show loading
-        const button = event.target;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking location...';
-        button.disabled = true;
-        
+
         // Send to server
         const response = await fetch('/api/attendance/mark', {
             method: 'POST',
@@ -98,22 +146,29 @@ async function markAttendance(sessionId) {
                 ...locationData
             })
         });
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
             alert(`✅ ${result.message}`);
             location.reload();
         } else {
             alert(`❌ ${result.message}`);
-            button.innerHTML = '<i class="fas fa-location-dot"></i> Try Again';
-            button.disabled = false;
+            if (btn) {
+                btn.innerHTML = originalHTML || '<i class="fas fa-location-dot"></i> Mark Attendance';
+                btn.disabled = false;
+            }
         }
-        
+
     } catch (error) {
-        alert(`Location error: ${error.message || error}`);
-        event.target.innerHTML = '<i class="fas fa-location-dot"></i> Mark Attendance';
-        event.target.disabled = false;
+        const msg = (error && error.message) ? error.message : String(error);
+        alert(`Location error: ${msg}`);
+
+        if (btn) {
+            btn.innerHTML = originalHTML || '<i class="fas fa-location-dot"></i> Mark Attendance';
+            btn.disabled = false;
+        }
     }
 }
 </script>
+{% endblock %}
