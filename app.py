@@ -542,6 +542,61 @@ def institution_signup():
     return redirect(url_for("login"))
 
 
+@app.route('/admin/dashboard')
+def admin_dashboard():
+    if flask_session.get('user_type') not in ['admin', 'super_admin']:
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('login'))
+
+
+    # Get statistics
+    total_users = db.session.query(User).count()
+    total_students = db.session.query(Student).count()
+    total_lecturers = db.session.query(Lecturer).count()
+    total_courses = db.session.query(Course).count()
+    total_sessions = db.session.query(SessionModel).count()
+
+    pending_requests = db.session.query(RemovalRequest).filter_by(status='pending').count()
+
+    recent_users = db.session.query(User).order_by(User.created_at.desc()).limit(5).all()
+    recent_courses = db.session.query(Course).order_by(Course.created_at.desc()).limit(5).all()
+
+    # ✅ Today / This Week summary
+    now = datetime.now()
+    today = now.date()
+    start_of_today = datetime.combine(today, datetime.min.time())
+    week_start = now - timedelta(days=7)
+
+    sessions_today = db.session.query(SessionModel).filter(SessionModel.date == today).count()
+    checkins_today = db.session.query(Attendance).filter(Attendance.timestamp >= start_of_today).count()
+
+    new_users_week = db.session.query(User).filter(User.created_at >= week_start).count()
+    courses_created_week = db.session.query(Course).filter(Course.created_at >= week_start).count()
+
+    # NOTE: Your DB currently doesn't store "late" or "failed verification" explicitly,
+    # so we'll show 0 for now until you add tracking.
+    late_checkins_today = 0
+    failed_verifications_today = 0
+
+    return render_template(
+        'admin_dashboard.html',
+        total_users=total_users,
+        total_students=total_students,
+        total_lecturers=total_lecturers,
+        total_courses=total_courses,
+        total_sessions=total_sessions,
+        pending_requests=pending_requests,
+        recent_users=recent_users,
+        recent_courses=recent_courses,
+
+        # ✅ new summary vars
+        sessions_today=sessions_today,
+        checkins_today=checkins_today,
+        late_checkins_today=late_checkins_today,
+        failed_verifications_today=failed_verifications_today,
+        new_users_week=new_users_week,
+        courses_created_week=courses_created_week
+    )
 
 
 @app.route('/admin/users')
@@ -1587,14 +1642,14 @@ def student_dashboard():
 
 @app.route('/student/mark-attendance')
 def mark_attendance():
-    student_user_id = flask_session.get('user_id')
-    student = db.session.query(Student).filter_by(user_id=student_user_id).first()
+    student_id = flask_session.get('user_id')
+    student = db.session.query(Student).filter_by(user_id=student_id).first()
 
     if not student:
         flash('Please login as a student', 'error')
         return redirect(url_for('login'))
 
-    requested_session_id = request.args.get("session_id", type=int)
+    requested_session_id = request.args.get('session_id', type=int)  # <-- ADD THIS
 
     active_sessions_list = []
     for course in student.courses:
@@ -1617,10 +1672,8 @@ def mark_attendance():
     return render_template(
         'mark_attendance.html',
         sessions=active_sessions_list,
-        requested_session_id=requested_session_id
+        requested_session_id=requested_session_id  # <-- PASS IT
     )
-
-
 
 
 @app.route('/api/student/details/<int:student_id>')
